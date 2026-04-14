@@ -7,7 +7,8 @@ const STUDENT_DOMAIN = '@students.jkuat.ac.ke';
 const STAFF_DOMAIN = '@jkuat.ac.ke';
 
 /**
- * Single allowed non-JKUAT Google / OTP address with lecturer role (all other lecturers must use @jkuat.ac.ke).
+ * The only non-@jkuat.ac.ke address that may sign in as a lecturer (Google or OTP).
+ * All other lecturers must use @jkuat.ac.ke. Do not add more values here without an explicit product decision.
  */
 export const LECTURER_GMAIL_EXCEPTION = 'eugenegabriel.ke@gmail.com';
 
@@ -42,7 +43,9 @@ export function maskEmailForDisplay(email: string) {
 export function roleFromEmail(email: string): 'student' | 'lecturer' {
   const e = norm(email);
   if (e.endsWith(STUDENT_DOMAIN)) return 'student';
-  return 'lecturer';
+  if (e.endsWith(STAFF_DOMAIN)) return 'lecturer';
+  if (e === LECTURER_GMAIL_EXCEPTION) return 'lecturer';
+  throw new Error('This email is not authorized for the app.');
 }
 
 export function nameFromEmail(email: string) {
@@ -66,6 +69,9 @@ function genId(role: 'student' | 'lecturer') {
  */
 export async function ensureProfileForSession(email: string, authUserId: string): Promise<User> {
   const normEmail = norm(email);
+  if (!isAllowedSignInEmail(normEmail)) {
+    throw new Error('This email is not authorized to use the app.');
+  }
 
   // 1. Existing profile by email?
   let { data: existing } = await supabase

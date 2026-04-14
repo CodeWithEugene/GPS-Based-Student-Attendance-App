@@ -40,6 +40,7 @@ Built for Jomo Kenyatta University of Agriculture and Technology (JKUAT).
 3. Open **Authentication → Providers → Email** and make sure it is enabled. Under **Email auth** uncheck **"Confirm email"** (so OTPs work on first login without clicking a link).
 4. Open **Authentication → URL Configuration → Redirect URLs** and add `gpsattendance://auth-callback` (matches the app `scheme` and Google OAuth callback path).
 5. Open **Settings → API** — copy the **Project URL** and the **anon public key**.
+6. **Lecturer Gmail exception (enforced in the app):** The only non-@jkuat.ac.ke address that may sign in as a lecturer is **eugenegabriel.ke@gmail.com** (`LECTURER_GMAIL_EXCEPTION` in [`src/lib/auth-helpers.ts`](src/lib/auth-helpers.ts)). All other lecturers must use **@jkuat.ac.ke**.
 
 #### Email: 6-digit OTP (not only a magic link)
 
