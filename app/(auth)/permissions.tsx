@@ -28,7 +28,7 @@ export default function Permissions() {
       <TopBar title="Permissions" tone="green" />
       <View style={{ flex: 1, padding: spacing.lg, gap: spacing.md }}>
         <Text style={{ fontSize: 15, color: colors.textMuted, marginBottom: 6 }}>
-          AttendEase needs a few permissions to verify your attendance securely.
+          This app needs a few permissions to verify your attendance securely.
         </Text>
 
         <PermRow

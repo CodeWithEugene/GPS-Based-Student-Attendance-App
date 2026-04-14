@@ -1,7 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import MapView, { Circle, Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 // @ts-ignore
@@ -27,10 +28,13 @@ export default function Setup() {
 
   useEffect(() => {
     (async () => {
-      const units = await repo.getUnits();
-      const u = units.find(x => x.id === unitId) || null;
+      let unitsList: ClassUnit[] = [];
+      try { unitsList = await repo.getUnits(); } catch {}
+      const u = unitsList.find(x => x.id === unitId) || null;
       setUnit(u);
-      if (u) setRadius(u.geofence.radius);
+      const saved = await AsyncStorage.getItem('ae.defaultRadius');
+      if (saved) setRadius(Number(saved));
+      else if (u) setRadius(u.geofence.radius);
 
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
@@ -64,8 +68,14 @@ export default function Setup() {
       requireSelfie: selfie,
       status: 'live',
     };
-    await repo.createSession(s);
-    router.replace('/(lecturer)/active');
+    try {
+      await repo.createSession(s);
+      router.replace('/(lecturer)/active');
+    } catch (e: any) {
+      Alert.alert('Could not start session', e?.message ?? 'Please check your connection and try again.');
+    } finally {
+      setStarting(false);
+    }
   };
 
   if (!unit) return null;

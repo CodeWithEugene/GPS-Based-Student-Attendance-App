@@ -3,6 +3,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { supabase } from './supabase';
 import { repo } from '../data/repo';
 import { User } from '../data/types';
+import { ensureProfileForSession, isJkuatEmail } from './auth-helpers';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -49,32 +50,21 @@ export async function signInWithGoogle(): Promise<
     return { ok: false, error: setErr?.message ?? 'Could not establish session.' };
   }
 
-  // Link this Google identity to the JKUAT profile row that shares its email.
   const email = sessionData.user.email.toLowerCase();
-  const { data: profileRow } = await supabase
-    .from('profiles')
-    .select('id,email,name,role,programme,department')
-    .ilike('email', email)
-    .maybeSingle();
-
-  if (!profileRow) {
+  if (!isJkuatEmail(email)) {
     await supabase.auth.signOut();
     return {
       ok: false,
-      error: `No JKUAT account is linked to ${email}. Ask ICT to add you, then try again.`,
+      error: `Access restricted — ${email} is not a JKUAT address. Use @students.jkuat.ac.ke or @jkuat.ac.ke.`,
     };
   }
 
-  await supabase.from('profiles').update({ auth_user_id: sessionData.user.id }).eq('id', profileRow.id);
-
-  const user: User = {
-    id: profileRow.id,
-    email: profileRow.email,
-    name: profileRow.name,
-    role: profileRow.role,
-    programme: profileRow.programme ?? undefined,
-    department: profileRow.department ?? undefined,
-  };
-  await repo.setCurrentUser(user);
-  return { ok: true, user };
+  try {
+    const user = await ensureProfileForSession(email, sessionData.user.id);
+    await repo.setCurrentUser(user);
+    return { ok: true, user };
+  } catch (e: any) {
+    await supabase.auth.signOut();
+    return { ok: false, error: e?.message ?? 'Could not set up your profile.' };
+  }
 }

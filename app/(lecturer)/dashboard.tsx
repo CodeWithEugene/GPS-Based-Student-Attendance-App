@@ -17,8 +17,14 @@ export default function LecturerDashboard() {
 
   const load = useCallback(async () => {
     if (!user) return;
-    setUnits(await repo.getUnitsForLecturer(user.id));
-    setSessions(await repo.getSessions());
+    try {
+      const [u, s] = await Promise.all([
+        repo.getUnitsForLecturer(user.id),
+        repo.getSessions(),
+      ]);
+      setUnits(u);
+      setSessions(s);
+    } catch {}
   }, [user]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));

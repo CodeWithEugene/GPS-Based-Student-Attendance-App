@@ -5,13 +5,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/UI';
 import { TopBar } from '../../src/components/TopBar';
 import { colors, spacing } from '../../src/theme';
-import { repo } from '../../src/data/repo';
 import { supabase } from '../../src/lib/supabase';
+import { ensureProfileForSession } from '../../src/lib/auth-helpers';
 import { useAuth } from '../../src/store';
 
 export default function OtpEntry() {
   const router = useRouter();
-  const { userId, mode } = useLocalSearchParams<{ userId: string; mode?: string }>();
+  const { email } = useLocalSearchParams<{ email: string }>();
   const { signIn } = useAuth();
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [err, setErr] = useState('');
@@ -36,19 +36,17 @@ export default function OtpEntry() {
   const verify = async () => {
     const code = digits.join('');
     if (code.length < 6) return setErr('Enter all 6 digits.');
+    if (!email) return setErr('Missing email. Go back and re-enter it.');
     setErr('');
     setLoading(true);
     try {
-      const profile = await repo.getUserById(String(userId));
-      if (!profile) { setErr('Account not found.'); return; }
-
       const { data, error } = await supabase.auth.verifyOtp({
-        email: profile.email,
+        email: String(email),
         token: code,
         type: 'email',
       });
 
-      if (error || !data.session) {
+      if (error || !data.session || !data.user) {
         const a = attempts + 1;
         setAttempts(a);
         if (a >= 3) return router.replace('/(auth)/locked');
@@ -56,36 +54,28 @@ export default function OtpEntry() {
         return;
       }
 
-      // Link this supabase auth user to the profile row (first-time users)
-      if (data.user?.id) {
-        await supabase.from('profiles').update({ auth_user_id: data.user.id }).eq('id', profile.id);
-      }
-
-      if (mode === 'reset') {
-        router.replace({ pathname: '/(auth)/new-password', params: { userId: profile.id } });
-        return;
-      }
-
+      const profile = await ensureProfileForSession(String(email), data.user.id);
       await signIn(profile);
-      router.replace('/(auth)/biometric');
+      router.replace(profile.role === 'lecturer' ? '/(lecturer)/dashboard' : '/(student)/dashboard');
+    } catch (e: any) {
+      setErr(e?.message ?? 'Something went wrong. Try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const resend = async () => {
-    const profile = await repo.getUserById(String(userId));
-    if (!profile) return;
+    if (!email) return;
     setErr('');
     setLeft(600);
-    await supabase.auth.signInWithOtp({ email: profile.email });
+    await supabase.auth.signInWithOtp({ email: String(email) });
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['bottom']}>
-      <TopBar title={mode === 'reset' ? 'Enter Reset Code' : 'Verify Your Identity'} tone="green" back />
+      <TopBar title="Verify Your Identity" tone="green" back />
       <View style={{ flex: 1, padding: spacing.xl, gap: spacing.md }}>
-        <Text style={styles.sub}>Enter the 6-digit code sent to your email.</Text>
+        <Text style={styles.sub}>Enter the 6-digit code sent to {email ?? 'your email'}.</Text>
         <View style={styles.row}>
           {digits.map((d, i) => (
             <TextInput

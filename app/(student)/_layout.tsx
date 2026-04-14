@@ -30,7 +30,6 @@ export default function StudentTabs() {
       <Tabs.Screen name="confirm" options={{ href: null }} />
       <Tabs.Screen name="help" options={{ href: null }} />
       <Tabs.Screen name="denied" options={{ href: null }} />
-      <Tabs.Screen name="not-open" options={{ href: null }} />
       <Tabs.Screen name="help-fail" options={{ href: null }} />
     </Tabs>
   );

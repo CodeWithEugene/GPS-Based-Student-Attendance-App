@@ -17,8 +17,14 @@ export default function History() {
 
   const load = useCallback(async () => {
     if (!user) return;
-    setRecords(await repo.getAttendanceForStudent(user.id));
-    setUnits(await repo.getUnitsForStudent(user.id));
+    try {
+      const [r, u] = await Promise.all([
+        repo.getAttendanceForStudent(user.id),
+        repo.getUnitsForStudent(user.id),
+      ]);
+      setRecords(r);
+      setUnits(u);
+    } catch {}
   }, [user]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));

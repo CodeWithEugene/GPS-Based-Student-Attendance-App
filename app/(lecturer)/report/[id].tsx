@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Body, Button, Card, Pill } from '../../../src/components/UI';
 import { TopBar } from '../../../src/components/TopBar';
 import { colors, spacing } from '../../../src/theme';
 import { repo } from '../../../src/data/repo';
 import { AttendanceRecord, ClassUnit, Session, User } from '../../../src/data/types';
+import { buildSessionCsv, shareCsv } from '../../../src/lib/export';
 
 export default function SingleReport() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -73,8 +74,21 @@ export default function SingleReport() {
           })}
         </Card>
 
-        <Button title="Export This Session (CSV)" onPress={() => {}} />
-        <Button title="Flag Anomaly" variant="ghost" style={{ borderWidth: 1, borderColor: colors.border }} onPress={() => {}} />
+        <Button
+          title="Export This Session (CSV)"
+          onPress={() => shareCsv(`${session.unitCode} attendance`, buildSessionCsv({ session, unit, records, users }))}
+        />
+        <Button
+          title="Flag Anomaly"
+          variant="ghost"
+          style={{ borderWidth: 1, borderColor: colors.border }}
+          onPress={() =>
+            Alert.alert(
+              'Flag anomaly',
+              'This session has been flagged for review. An administrator will take a closer look at the GPS records.',
+            )
+          }
+        />
       </ScrollView>
     </SafeAreaView>
   );

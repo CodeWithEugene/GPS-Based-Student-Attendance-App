@@ -6,6 +6,7 @@ import { Body, Button, Card, Pill } from '../../src/components/UI';
 import { colors, spacing } from '../../src/theme';
 import { repo } from '../../src/data/repo';
 import { AttendanceRecord, ClassUnit, Session, User } from '../../src/data/types';
+import { buildOverviewCsv, shareCsv } from '../../src/lib/export';
 import { useAuth } from '../../src/store';
 
 export default function Reports() {
@@ -19,12 +20,18 @@ export default function Reports() {
 
   const load = useCallback(async () => {
     if (!user) return;
-    const u = await repo.getUnitsForLecturer(user.id);
-    setUnits(u);
-    const s = await repo.getSessions();
-    setSessions(s.filter(x => u.some(y => y.id === x.unitId)));
-    setRecords(await repo.getAttendance());
-    setUsers(await repo.getUsers());
+    try {
+      const [u, s, r, uu] = await Promise.all([
+        repo.getUnitsForLecturer(user.id),
+        repo.getSessions(),
+        repo.getAttendance(),
+        repo.getUsers(),
+      ]);
+      setUnits(u);
+      setSessions(s.filter(x => u.some(y => y.id === x.unitId)));
+      setRecords(r);
+      setUsers(uu);
+    } catch {}
   }, [user]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -114,7 +121,16 @@ export default function Reports() {
           ))}
         </Card>
 
-        <Button title="Export All (CSV)" style={{ backgroundColor: colors.gold, borderColor: colors.gold }} onPress={() => {}} />
+        <Button
+          title="Export All (CSV)"
+          style={{ backgroundColor: colors.gold, borderColor: colors.gold }}
+          onPress={() =>
+            shareCsv(
+              'Attendance report',
+              buildOverviewCsv({ units, sessions: filteredSessions, records }),
+            )
+          }
+        />
 
         <Text style={{ fontWeight: '700', marginTop: 8 }}>Session reports</Text>
         {filteredSessions.map(s => (

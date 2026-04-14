@@ -1,12 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Body, Button, Card, Pill } from '../../../src/components/UI';
+import { Body, Button, Card } from '../../../src/components/UI';
 import { TopBar } from '../../../src/components/TopBar';
 import { colors, spacing } from '../../../src/theme';
 import { repo } from '../../../src/data/repo';
-import { AttendanceRecord, User } from '../../../src/data/types';
+import { AttendanceRecord, Session, User } from '../../../src/data/types';
 
 export default function StudentDetail() {
   const router = useRouter();
@@ -14,16 +14,47 @@ export default function StudentDetail() {
   const [user, setUser] = useState<User | null>(null);
   const [allRecords, setAllRecords] = useState<AttendanceRecord[]>([]);
   const [currentRec, setCurrentRec] = useState<AttendanceRecord | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [working, setWorking] = useState<'present' | 'absent' | null>(null);
 
-  useEffect(() => {
-    (async () => {
+  const load = useCallback(async () => {
+    if (!id) return;
+    try {
       const u = await repo.getUserById(String(id));
       setUser(u ?? null);
       const all = await repo.getAttendanceForStudent(String(id));
       setAllRecords(all);
-      if (sid) setCurrentRec(all.find(r => r.sessionId === sid) ?? null);
-    })();
+      if (sid) {
+        setCurrentRec(all.find(r => r.sessionId === sid) ?? null);
+        const sessions = await repo.getSessions();
+        setSession(sessions.find(s => s.id === sid) ?? null);
+      }
+    } catch {}
   }, [id, sid]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const override = async (status: 'present' | 'absent') => {
+    if (!user || !session) return;
+    setWorking(status);
+    try {
+      await repo.overrideAttendance({
+        sessionId: session.id,
+        unitId: session.unitId,
+        unitCode: session.unitCode,
+        studentId: user.id,
+        studentName: user.name,
+        status,
+        coords: { latitude: session.geofence.latitude, longitude: session.geofence.longitude },
+      });
+      await load();
+      Alert.alert('Updated', `${user.name} has been marked ${status}.`);
+    } catch (e: any) {
+      Alert.alert('Could not update', e?.message ?? 'Please try again.');
+    } finally {
+      setWorking(null);
+    }
+  };
 
   if (!user) return null;
   const total = allRecords.length || 1;
@@ -42,7 +73,7 @@ export default function StudentDetail() {
 
         <Card style={{ backgroundColor: currentRec ? colors.greenLight : colors.redLight, borderColor: 'transparent' }}>
           <Text style={{ fontWeight: '700', color: currentRec ? colors.green : colors.red }}>
-            Current session: {currentRec ? 'Signed in' : 'Absent'}
+            Current session: {currentRec ? (currentRec.overridden ? 'Marked present (override)' : 'Signed in') : 'Absent'}
           </Text>
           {currentRec && <Body muted>At {new Date(currentRec.signedAt).toLocaleTimeString()}</Body>}
         </Card>
@@ -56,10 +87,28 @@ export default function StudentDetail() {
           <View style={styles.bar}><View style={[styles.fill, { width: `${pct}%` }]} /></View>
         </Card>
 
-        <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
-          <Button title="Mark Present" variant="secondary" style={{ flex: 1 }} onPress={() => router.back()} />
-          <Button title="Mark Absent" variant="outline" style={{ flex: 1 }} onPress={() => router.back()} />
-        </View>
+        {session ? (
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
+            <Button
+              title="Mark Present"
+              variant="secondary"
+              style={{ flex: 1 }}
+              loading={working === 'present'}
+              onPress={() => override('present')}
+            />
+            <Button
+              title="Mark Absent"
+              variant="outline"
+              style={{ flex: 1 }}
+              loading={working === 'absent'}
+              onPress={() => override('absent')}
+            />
+          </View>
+        ) : (
+          <Body muted style={{ textAlign: 'center', marginTop: 6 }}>
+            Open this student from a live session to mark attendance.
+          </Body>
+        )}
       </View>
     </SafeAreaView>
   );

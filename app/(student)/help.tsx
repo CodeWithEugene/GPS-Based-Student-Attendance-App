@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Linking from 'expo-linking';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -39,7 +40,12 @@ export default function Help() {
         })}
       </ScrollView>
       <View style={{ padding: spacing.lg }}>
-        <Button title="Contact Support" onPress={() => {}} />
+        <Button
+          title="Contact Support"
+          onPress={() =>
+            Linking.openURL('mailto:ict@jkuat.ac.ke?subject=GPS%20Attendance%20App%20Support')
+          }
+        />
       </View>
     </SafeAreaView>
   );

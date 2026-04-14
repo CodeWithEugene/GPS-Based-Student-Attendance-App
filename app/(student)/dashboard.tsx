@@ -20,15 +20,17 @@ export default function StudentDashboard() {
   const load = useCallback(async () => {
     if (!user) return;
     setRefreshing(true);
-    const [u, s, r] = await Promise.all([
-      repo.getUnitsForStudent(user.id),
-      repo.getSessions(),
-      repo.getAttendanceForStudent(user.id),
-    ]);
-    setUnits(u);
-    setSessions(s);
-    setRecords(r);
-    setRefreshing(false);
+    try {
+      const [u, s, r] = await Promise.all([
+        repo.getUnitsForStudent(user.id),
+        repo.getSessions(),
+        repo.getAttendanceForStudent(user.id),
+      ]);
+      setUnits(u);
+      setSessions(s);
+      setRecords(r);
+    } catch {}
+    finally { setRefreshing(false); }
   }, [user]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));

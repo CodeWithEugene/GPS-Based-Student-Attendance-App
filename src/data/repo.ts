@@ -162,6 +162,38 @@ export const repo = {
     if (error) throw error;
     return data ? toAttendance(data as DbAttendance) : r;
   },
+  async overrideAttendance(opts: {
+    sessionId: string; unitId: string; unitCode: string;
+    studentId: string; studentName: string;
+    status: 'present' | 'absent';
+    coords: { latitude: number; longitude: number };
+  }): Promise<void> {
+    if (opts.status === 'absent') {
+      const { error } = await supabase
+        .from('attendance')
+        .delete()
+        .eq('session_id', opts.sessionId)
+        .eq('student_id', opts.studentId);
+      if (error) throw error;
+      return;
+    }
+    const rec: DbAttendance = {
+      id: `A-${Date.now()}`,
+      session_id: opts.sessionId,
+      unit_id: opts.unitId,
+      unit_code: opts.unitCode,
+      student_id: opts.studentId,
+      student_name: opts.studentName,
+      signed_at: new Date().toISOString(),
+      coords: opts.coords,
+      status: 'present',
+      overridden: true,
+    };
+    const { error } = await supabase
+      .from('attendance')
+      .upsert(rec, { onConflict: 'session_id,student_id' });
+    if (error) throw error;
+  },
 
   // --- auth session (cached profile) ---
   async setCurrentUser(u: User | null) {

@@ -1,7 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import * as Linking from 'expo-linking';
+import * as LocalAuth from 'expo-local-authentication';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect, useState } from 'react';
+import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Body } from '../../src/components/UI';
 import { colors, spacing } from '../../src/theme';
@@ -11,6 +14,20 @@ export default function Profile() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const [bio, setBio] = useState(false);
+  useEffect(() => {
+    AsyncStorage.getItem('ae.biometricEnabled').then(v => setBio(v === '1'));
+  }, []);
+  const toggleBio = async (v: boolean) => {
+    if (v) {
+      const hw = await LocalAuth.hasHardwareAsync();
+      const enrolled = await LocalAuth.isEnrolledAsync();
+      if (!hw || !enrolled) { Alert.alert('Biometric unavailable', 'No fingerprint or face ID is set up on this device.'); return; }
+      const res = await LocalAuth.authenticateAsync({ promptMessage: 'Confirm to enable biometric login' });
+      if (!res.success) return;
+    }
+    setBio(v);
+    await AsyncStorage.setItem('ae.biometricEnabled', v ? '1' : '0');
+  };
   if (!user) return null;
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top']}>
@@ -26,9 +43,9 @@ export default function Profile() {
       <View style={{ paddingHorizontal: spacing.lg }}>
         <Row icon="key-outline" label="Change Password" onPress={() => router.push('/(auth)/new-password')} />
         <Divider />
-        <Row icon="finger-print" label="Biometric Login" right={<Switch value={bio} onValueChange={setBio} trackColor={{ true: colors.green }} thumbColor="#fff" />} />
+        <Row icon="finger-print" label="Biometric Login" right={<Switch value={bio} onValueChange={toggleBio} trackColor={{ true: colors.green }} thumbColor="#fff" />} />
         <Divider />
-        <Row icon="notifications-outline" label="Notification Preferences" onPress={() => {}} />
+        <Row icon="notifications-outline" label="Notification Preferences" onPress={() => Linking.openSettings()} />
         <Divider />
         <Row icon="help-circle-outline" label="Help and FAQ" onPress={() => router.push('/(student)/help')} />
       </View>

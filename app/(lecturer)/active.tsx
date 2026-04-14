@@ -21,16 +21,23 @@ export default function Active() {
 
   const load = useCallback(async () => {
     if (!user) return;
-    const sessions = await repo.getSessions();
-    const live = sessions.find(s => s.lecturerId === user.id && s.status === 'live') || null;
-    setSession(live);
-    if (live) {
-      const units = await repo.getUnits();
-      const u = units.find(x => x.id === live.unitId) || null;
-      setUnit(u);
-      setRecords(await repo.getAttendanceForSession(live.id));
-      setUsers(await repo.getUsers());
-      setLeft(Math.max(0, Math.floor((new Date(live.endsAt).getTime() - Date.now()) / 1000)));
+    try {
+      const sessions = await repo.getSessions();
+      const live = sessions.find(s => s.lecturerId === user.id && s.status === 'live') || null;
+      setSession(live);
+      if (live) {
+        const [units, recs, users] = await Promise.all([
+          repo.getUnits(),
+          repo.getAttendanceForSession(live.id),
+          repo.getUsers(),
+        ]);
+        setUnit(units.find(x => x.id === live.unitId) || null);
+        setRecords(recs);
+        setUsers(users);
+        setLeft(Math.max(0, Math.floor((new Date(live.endsAt).getTime() - Date.now()) / 1000)));
+      }
+    } catch {
+      // Silent failure for background polling; next tick will retry.
     }
   }, [user]);
 

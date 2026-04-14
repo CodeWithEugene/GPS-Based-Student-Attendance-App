@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as Linking from 'expo-linking';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '../../src/theme';
@@ -18,7 +19,16 @@ export default function HelpFail() {
         <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 4 }}>Try one of the options below.</Text>
         <View style={{ height: 20, width: '100%' }} />
         <Option color={colors.green} label="Try Again" onPress={() => router.back()} />
-        <Option color={colors.green} label="Contact Lecturer" outline onPress={() => {}} />
+        <Option
+          color={colors.green}
+          label="Contact Lecturer"
+          outline
+          onPress={() =>
+            Linking.openURL(
+              'mailto:?subject=Attendance%20sign-in%20issue&body=Hello%2C%20I%20am%20having%20trouble%20signing%20attendance.',
+            )
+          }
+        />
         <Option color="#AAA" label="Go to Dashboard" onPress={() => router.replace('/(student)/dashboard')} />
       </View>
     </SafeAreaView>

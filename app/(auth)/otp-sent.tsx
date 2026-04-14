@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Linking from 'expo-linking';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,7 +19,7 @@ function fmt(s: number) {
 
 export default function OtpSent() {
   const router = useRouter();
-  const { userId, email } = useLocalSearchParams<{ userId: string; email: string }>();
+  const { email } = useLocalSearchParams<{ email: string }>();
   const [left, setLeft] = useState(600);
 
   useEffect(() => {
@@ -39,8 +40,18 @@ export default function OtpSent() {
         <Text style={styles.email}>{email ? mask(String(email)) : ''}</Text>
         <Text style={styles.timer}>Expires in {fmt(left)}</Text>
         <View style={{ height: 12 }} />
-        <Button title="Open Email App" variant="outline" onPress={() => {}} />
-        <Pressable onPress={() => router.replace({ pathname: '/(auth)/otp', params: { userId } })}>
+        <Button
+          title="Open Email App"
+          variant="outline"
+          onPress={async () => {
+            const schemes = ['googlegmail://', 'message://', 'ms-outlook://', 'mailto:'];
+            for (const s of schemes) {
+              try { if (await Linking.canOpenURL(s)) { Linking.openURL(s); return; } } catch {}
+            }
+            Linking.openURL('mailto:');
+          }}
+        />
+        <Pressable onPress={() => router.replace({ pathname: '/(auth)/otp', params: { email } })}>
           <Text style={{ color: colors.green, fontWeight: '600', marginTop: 6 }}>I have the code — Enter it</Text>
         </Pressable>
         <Pressable onPress={() => setLeft(600)}>

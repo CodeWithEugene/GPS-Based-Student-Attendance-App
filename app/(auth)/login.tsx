@@ -1,19 +1,17 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Body, Button, Input } from '../../src/components/UI';
+import { GoogleIcon } from '../../src/components/GoogleIcon';
 import { colors, spacing } from '../../src/theme';
-import { repo } from '../../src/data/repo';
 import { supabase } from '../../src/lib/supabase';
+import { isJkuatEmail } from '../../src/lib/auth-helpers';
 import { signInWithGoogle } from '../../src/lib/google-auth';
-import { useAuth } from '../../src/store';
 
 export default function Login() {
   const router = useRouter();
-  const { refresh } = useAuth();
-  const [id, setId] = useState('');
+  const [email, setEmail] = useState('');
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -21,17 +19,19 @@ export default function Login() {
   const onContinue = async () => {
     Keyboard.dismiss();
     setErr('');
-    if (!id.trim()) return setErr('Please enter your Student or Staff ID.');
+    const normalized = email.trim().toLowerCase();
+    if (!normalized) return setErr('Please enter your JKUAT email address.');
+    if (!isJkuatEmail(normalized)) {
+      return setErr('Only @students.jkuat.ac.ke or @jkuat.ac.ke emails are allowed.');
+    }
     setLoading(true);
     try {
-      const user = await repo.getUserById(id.trim());
-      if (!user) { setErr('No account found with that ID.'); return; }
       const { error } = await supabase.auth.signInWithOtp({
-        email: user.email,
+        email: normalized,
         options: { shouldCreateUser: true },
       });
       if (error) { setErr(error.message); return; }
-      router.push({ pathname: '/(auth)/otp-sent', params: { userId: user.id, email: user.email } });
+      router.push({ pathname: '/(auth)/otp-sent', params: { email: normalized } });
     } finally {
       setLoading(false);
     }
@@ -44,8 +44,7 @@ export default function Login() {
     try {
       const result = await signInWithGoogle();
       if (!result.ok) { setErr(result.error); return; }
-      await refresh();
-      router.replace('/(auth)/biometric');
+      router.replace(result.user.role === 'lecturer' ? '/(lecturer)/dashboard' : '/(student)/dashboard');
     } finally {
       setGoogleLoading(false);
     }
@@ -56,20 +55,24 @@ export default function Login() {
       <View style={{ flex: 1, padding: spacing.xl, gap: spacing.md }}>
         <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
         <Text style={styles.title}>Welcome back</Text>
-        <Body muted style={{ textAlign: 'center' }}>Sign in with your JKUAT ID or Google account.</Body>
+        <Body muted style={{ textAlign: 'center' }}>
+          Sign in with your JKUAT email. We'll send you a 6-digit code.
+        </Body>
         <View style={{ height: 12 }} />
-        <Text style={styles.label}>Enter your Student ID</Text>
+        <Text style={styles.label}>JKUAT email</Text>
         <Input
-          placeholder="e.g. S001"
-          autoCapitalize="characters"
-          value={id}
-          onChangeText={setId}
+          placeholder="yourname@students.jkuat.ac.ke"
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
           returnKeyType="done"
           onSubmitEditing={onContinue}
         />
         {err ? <Text style={styles.err}>{err}</Text> : null}
         <View style={{ height: 4 }} />
-        <Button title="Continue" onPress={onContinue} loading={loading} />
+        <Button title="Send code" onPress={onContinue} loading={loading} />
 
         <View style={styles.divider}>
           <View style={styles.dividerLine} />
@@ -82,19 +85,15 @@ export default function Login() {
           disabled={googleLoading}
           style={({ pressed }) => [styles.googleBtn, { opacity: pressed || googleLoading ? 0.7 : 1 }]}
         >
-          <Ionicons name="logo-google" size={20} color="#4285F4" />
+          <GoogleIcon size={20} />
           <Text style={styles.googleText}>
             {googleLoading ? 'Opening Google…' : 'Continue with Google'}
           </Text>
         </Pressable>
 
-        <Pressable onPress={() => router.push('/(auth)/forgot')} style={{ alignSelf: 'center', marginTop: 4 }}>
-          <Text style={{ color: colors.green, fontWeight: '600' }}>Forgot Password?</Text>
-        </Pressable>
-
         <View style={{ flex: 1 }} />
         <Body muted style={{ textAlign: 'center', fontSize: 12 }}>
-          Demo IDs — Students: S001–S004, Lecturers: L001, L002
+          Access is restricted to @students.jkuat.ac.ke and @jkuat.ac.ke accounts.
         </Body>
       </View>
     </SafeAreaView>
