@@ -50,7 +50,7 @@ Supabase uses the same `signInWithOtp` call for both flows. **What the user rece
 3. Include the OTP token in the body, for example: `Your login code is: {{ .Token }}`  
    If the template only contains `{{ .ConfirmationURL }}`, users get a **clickable link** instead of a code.
 4. A full HTML example (JKUAT logo + OTP only, no magic link) lives in [`supabase/email-template-magic-link.html`](supabase/email-template-magic-link.html) — copy its **inner body/table content** into the dashboard editor if it expects HTML fragments only.
-5. Optional: under **Authentication → Providers → Email**, adjust **Email OTP expiration** if needed.
+5. Under **Authentication → Providers → Email**, set **OTP length** to **6 digits** (Supabase default) so codes match the app. Optionally adjust **Email OTP expiration**.
 
 #### Custom SMTP and “From” address (e.g. `eugene@technetium.co.ke`)
 

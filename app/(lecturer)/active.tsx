@@ -28,14 +28,26 @@ export default function Active() {
       const live = sessions.find(s => s.lecturerId === user.id && s.status === 'live') || null;
       setSession(live);
       if (live) {
-        const [units, recs, users] = await Promise.all([
+        const [units, recs, allUsers] = await Promise.all([
           repo.getUnits(),
           repo.getAttendanceForSession(live.id),
           repo.getUsers(),
         ]);
-        setUnit(units.find(x => x.id === live.unitId) || null);
+        const u = units.find(x => x.id === live.unitId) || null;
+        setUnit(u);
         setRecords(recs);
-        setUsers(users);
+        if (u?.courseId) {
+          const roster = await repo.getStudentsForCourse(u.courseId);
+          setUsers(
+            roster.length > 0
+              ? roster
+              : allUsers.filter(x => u.enrolledStudentIds.includes(x.id) && x.role === 'student'),
+          );
+        } else if (u) {
+          setUsers(allUsers.filter(x => u.enrolledStudentIds.includes(x.id) && x.role === 'student'));
+        } else {
+          setUsers([]);
+        }
         setLeft(Math.max(0, Math.floor((new Date(live.endsAt).getTime() - Date.now()) / 1000)));
       }
     } catch {
@@ -70,12 +82,9 @@ export default function Active() {
     );
   }
 
-  const enrolled = unit.enrolledStudentIds;
-  const signedSet = new Set(records.map(r => r.studentId));
-  const rows = enrolled.map(sid => {
-    const u = users.find(x => x.id === sid);
-    const rec = records.find(r => r.studentId === sid);
-    return { id: sid, name: u?.name ?? sid, record: rec };
+  const rows = users.map(stu => {
+    const rec = records.find(r => r.studentId === stu.id);
+    return { id: stu.id, name: stu.name, record: rec };
   });
   const m = Math.floor(left / 60).toString().padStart(2, '0');
   const s = (left % 60).toString().padStart(2, '0');
@@ -91,7 +100,7 @@ export default function Active() {
           <Text style={{ color: colors.greenDark, fontWeight: '800' }}>Session Live — {session.unitCode}</Text>
         </View>
         <Text style={{ color: colors.greenDark, fontWeight: '700', marginTop: 4 }}>
-          {records.length} / {enrolled.length} signed
+          {records.length} / {rows.length} signed
         </Text>
         <Text style={{ color: '#8A5A00', marginTop: 2 }}>Ends in {m}:{s}</Text>
       </View>

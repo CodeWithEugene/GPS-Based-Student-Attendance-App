@@ -84,6 +84,7 @@ export default function LecturerTabs() {
       <Tabs.Screen name="active" options={{ title: 'Live' }} />
       <Tabs.Screen name="reports" options={{ title: 'Reports' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen name="create-unit" options={{ href: null }} />
       <Tabs.Screen name="setup" options={{ href: null }} />
       <Tabs.Screen name="end" options={{ href: null }} />
       <Tabs.Screen name="student/[id]" options={{ href: null }} />

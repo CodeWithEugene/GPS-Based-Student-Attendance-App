@@ -3,7 +3,9 @@ import * as WebBrowser from 'expo-web-browser';
 import { getSupabaseConfigError, supabase } from './supabase';
 import { repo } from '../data/repo';
 import { User } from '../data/types';
-import { ensureProfileForSession, isJkuatEmail } from './auth-helpers';
+import { ensureProfileForSession, isAllowedSignInEmail } from './auth-helpers';
+import { markPermissionOnboardingComplete } from './onboarding-keys';
+import { oauthErrorLooksLikeUnsupportedEmail, parseOAuthRedirectUrl } from './oauth-parse';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -44,11 +46,21 @@ export async function signInWithGoogle(): Promise<SignInWithGoogleResult> {
     return { ok: false, reason: 'other', message: 'Google sign-in was cancelled.' };
   }
 
-  // Supabase returns tokens in the URL fragment (#access_token=...&refresh_token=...)
-  const fragment = result.url.split('#')[1] ?? result.url.split('?')[1] ?? '';
-  const params = new URLSearchParams(fragment);
-  const access_token = params.get('access_token');
-  const refresh_token = params.get('refresh_token');
+  const parsed = parseOAuthRedirectUrl(result.url);
+  if (parsed.error) {
+    const desc = parsed.errorDescription || '';
+    if (oauthErrorLooksLikeUnsupportedEmail(parsed.error, desc)) {
+      return { ok: false, reason: 'unsupported_email', email: '' };
+    }
+    return {
+      ok: false,
+      reason: 'other',
+      message: desc || `Google sign-in failed (${parsed.error}).`,
+    };
+  }
+
+  const access_token = parsed.access_token;
+  const refresh_token = parsed.refresh_token;
   if (!access_token || !refresh_token) {
     return { ok: false, reason: 'other', message: 'Google did not return valid tokens.' };
   }
@@ -62,7 +74,7 @@ export async function signInWithGoogle(): Promise<SignInWithGoogleResult> {
   }
 
   const email = sessionData.user.email.toLowerCase();
-  if (!isJkuatEmail(email)) {
+  if (!isAllowedSignInEmail(email)) {
     await supabase.auth.signOut();
     return { ok: false, reason: 'unsupported_email', email };
   }
@@ -70,6 +82,7 @@ export async function signInWithGoogle(): Promise<SignInWithGoogleResult> {
   try {
     const user = await ensureProfileForSession(email, sessionData.user.id);
     await repo.setCurrentUser(user);
+    await markPermissionOnboardingComplete();
     return { ok: true, user };
   } catch (e: any) {
     await supabase.auth.signOut();

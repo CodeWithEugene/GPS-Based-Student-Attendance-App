@@ -6,9 +6,28 @@ const STUDENT_DOMAIN = '@students.jkuat.ac.ke';
 /** Staff/lecturer accounts — lecturer app: units, live sessions, reports, attendance. */
 const STAFF_DOMAIN = '@jkuat.ac.ke';
 
+/**
+ * Single allowed non-JKUAT Google / OTP address with lecturer role (all other lecturers must use @jkuat.ac.ke).
+ */
+export const LECTURER_GMAIL_EXCEPTION = 'eugenegabriel.ke@gmail.com';
+
+function norm(email: string) {
+  return email.trim().toLowerCase();
+}
+
+/** True for @students.jkuat.ac.ke or @jkuat.ac.ke only (not the Gmail exception). */
 export function isJkuatEmail(email: string) {
-  const e = email.trim().toLowerCase();
+  const e = norm(email);
   return e.endsWith(STUDENT_DOMAIN) || e.endsWith(STAFF_DOMAIN);
+}
+
+/** Email may sign in with OTP or Google: JKUAT student, JKUAT staff, or the one lecturer Gmail exception. */
+export function isAllowedSignInEmail(email: string) {
+  const e = norm(email);
+  if (e.endsWith(STUDENT_DOMAIN)) return true;
+  if (e.endsWith(STAFF_DOMAIN)) return true;
+  if (e === LECTURER_GMAIL_EXCEPTION) return true;
+  return false;
 }
 
 /** Partially hide an address for on-screen display (e.g. after OAuth). */
@@ -21,7 +40,9 @@ export function maskEmailForDisplay(email: string) {
 }
 
 export function roleFromEmail(email: string): 'student' | 'lecturer' {
-  return email.trim().toLowerCase().endsWith(STUDENT_DOMAIN) ? 'student' : 'lecturer';
+  const e = norm(email);
+  if (e.endsWith(STUDENT_DOMAIN)) return 'student';
+  return 'lecturer';
 }
 
 export function nameFromEmail(email: string) {
@@ -44,18 +65,31 @@ function genId(role: 'student' | 'lecturer') {
  * Returns the profile as a User.
  */
 export async function ensureProfileForSession(email: string, authUserId: string): Promise<User> {
-  const normEmail = email.trim().toLowerCase();
+  const normEmail = norm(email);
 
   // 1. Existing profile by email?
   let { data: existing } = await supabase
     .from('profiles')
-    .select('id,email,name,role,programme,department')
+    .select('id,email,name,role,programme,department,course_id')
     .ilike('email', normEmail)
     .maybeSingle();
 
   if (existing) {
     // Link this auth user to the profile
     await supabase.from('profiles').update({ auth_user_id: authUserId }).eq('id', existing.id);
+    if (normEmail === LECTURER_GMAIL_EXCEPTION && existing.role !== 'lecturer') {
+      const { data: upgraded } = await supabase
+        .from('profiles')
+        .update({
+          role: 'lecturer',
+          department: existing.department ?? 'Computing',
+          programme: null,
+        })
+        .eq('id', existing.id)
+        .select('id,email,name,role,programme,department,course_id')
+        .single();
+      if (upgraded) existing = upgraded as typeof existing;
+    }
   } else {
     // 2. Auto-create a profile from the email domain
     const role = roleFromEmail(normEmail);
@@ -68,22 +102,25 @@ export async function ensureProfileForSession(email: string, authUserId: string)
         email: normEmail,
         name,
         role,
-        programme: role === 'student' ? 'BSc Computer Science' : null,
+        programme: null,
+        course_id: null,
         department: role === 'lecturer' ? 'Computing' : null,
         auth_user_id: authUserId,
       })
-      .select('id,email,name,role,programme,department')
+      .select('id,email,name,role,programme,department,course_id')
       .single();
     if (error) throw error;
     existing = created;
   }
 
+  const row = existing!;
   return {
-    id: existing!.id,
-    email: existing!.email,
-    name: existing!.name,
-    role: existing!.role as 'student' | 'lecturer',
-    programme: existing!.programme ?? undefined,
-    department: existing!.department ?? undefined,
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    role: row.role as 'student' | 'lecturer',
+    programme: row.programme ?? undefined,
+    department: row.department ?? undefined,
+    courseId: row.course_id ?? undefined,
   };
 }

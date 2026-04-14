@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Body, Button } from '../../src/components/UI';
 import { colors, spacing } from '../../src/theme';
+import { OTP_CODE_LENGTH } from '../../src/lib/auth-constants';
 import { supabase } from '../../src/lib/supabase';
 import { formatAuthErrorForDisplay } from '../../src/lib/auth-errors';
 
@@ -39,7 +40,7 @@ export default function OtpSent() {
         </View>
         <Text style={styles.h}>Check your email</Text>
         <Body muted style={{ textAlign: 'center' }}>
-          We've sent a 6-digit verification code to
+          {`We've sent a ${OTP_CODE_LENGTH}-digit verification code to`}
         </Body>
         <Text style={styles.email}>{email ? mask(String(email)) : ''}</Text>
         <Text style={styles.timer}>Expires in {fmt(left)}</Text>

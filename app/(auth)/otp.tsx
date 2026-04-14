@@ -7,14 +7,18 @@ import { TopBar } from '../../src/components/TopBar';
 import { colors, spacing } from '../../src/theme';
 import { supabase } from '../../src/lib/supabase';
 import { ensureProfileForSession } from '../../src/lib/auth-helpers';
+import { OTP_CODE_LENGTH } from '../../src/lib/auth-constants';
+import { markPermissionOnboardingComplete } from '../../src/lib/onboarding-keys';
 import { useAuth } from '../../src/store';
 import { formatAuthErrorForDisplay, shouldCountOtpFailedAttempt } from '../../src/lib/auth-errors';
+
+const emptyDigits = () => Array.from({ length: OTP_CODE_LENGTH }, () => '');
 
 export default function OtpEntry() {
   const router = useRouter();
   const { email } = useLocalSearchParams<{ email: string }>();
   const { signIn } = useAuth();
-  const [digits, setDigits] = useState(['', '', '', '', '', '']);
+  const [digits, setDigits] = useState(emptyDigits);
   const [err, setErr] = useState('');
   const [attempts, setAttempts] = useState(0);
   const [left, setLeft] = useState(600);
@@ -36,12 +40,12 @@ export default function OtpEntry() {
     const next = [...digits];
     next[i] = c;
     setDigits(next);
-    if (c && i < 5) refs.current[i + 1]?.focus();
+    if (c && i < OTP_CODE_LENGTH - 1) refs.current[i + 1]?.focus();
   };
 
   const verify = async () => {
     const code = digits.join('');
-    if (code.length < 6) return setErr('Enter all 6 digits.');
+    if (code.length < OTP_CODE_LENGTH) return setErr(`Enter all ${OTP_CODE_LENGTH} digits.`);
     if (!email) return setErr('Missing email. Go back and re-enter it.');
     setErr('');
     setLoading(true);
@@ -72,6 +76,7 @@ export default function OtpEntry() {
 
       const profile = await ensureProfileForSession(String(email), data.user.id);
       await signIn(profile);
+      await markPermissionOnboardingComplete();
       router.replace(profile.role === 'lecturer' ? '/(lecturer)/dashboard' : '/(student)/dashboard');
     } catch (e: any) {
       setErr(formatAuthErrorForDisplay(e));
@@ -95,7 +100,9 @@ export default function OtpEntry() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['bottom']}>
       <TopBar title="Verify Your Identity" tone="green" back />
       <View style={{ flex: 1, padding: spacing.xl, gap: spacing.md }}>
-        <Text style={styles.sub}>Enter the 6-digit code sent to {email ?? 'your email'}.</Text>
+        <Text style={styles.sub}>
+          Enter the {OTP_CODE_LENGTH}-digit code sent to {email ?? 'your email'}.
+        </Text>
         <View style={styles.row}>
           {digits.map((d, i) => (
             <TextInput
@@ -127,9 +134,17 @@ export default function OtpEntry() {
 
 const styles = StyleSheet.create({
   sub: { color: colors.textMuted, textAlign: 'center' },
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: 12 },
+  row: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 6, marginVertical: 12 },
   box: {
-    width: 48, height: 56, borderWidth: 1.5, borderColor: colors.green, borderRadius: 10,
-    textAlign: 'center', fontSize: 22, fontWeight: '700', color: colors.text, backgroundColor: colors.white,
+    width: 38,
+    height: 50,
+    borderWidth: 1.5,
+    borderColor: colors.green,
+    borderRadius: 10,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    backgroundColor: colors.white,
   },
 });

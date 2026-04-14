@@ -1,6 +1,9 @@
 -- AttendEase — Supabase schema
 -- Run this in your Supabase project: SQL Editor → New Query → paste → Run.
 -- It creates tables, RLS policies, and seeds demo users/units.
+--
+-- Next: run `courses-migration.sql` for degree programmes (courses table),
+-- profiles.course_id, units.course_id, and course-based attendance RLS.
 
 -- ---------------------------------------------------------------------------
 -- 1. Tables

@@ -9,9 +9,17 @@ import { colors, radius, spacing } from '../../src/theme';
 
 export default function GoogleUnsupportedEmail() {
   const router = useRouter();
-  const { email } = useLocalSearchParams<{ email?: string }>();
+  const { email, hint } = useLocalSearchParams<{ email?: string; hint?: string }>();
   const raw = typeof email === 'string' ? email : '';
   const masked = raw ? maskEmailForDisplay(raw) : null;
+  let hintText = '';
+  if (typeof hint === 'string' && hint) {
+    try {
+      hintText = decodeURIComponent(hint);
+    } catch {
+      hintText = hint;
+    }
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['bottom']}>
@@ -27,8 +35,14 @@ export default function GoogleUnsupportedEmail() {
         </View>
         <Text style={styles.title}>JKUAT email required</Text>
         <Body muted style={styles.lead}>
-          This app is only for JKUAT students and staff. The Google account you chose is not an allowed address.
+          Sign-in is for @students.jkuat.ac.ke, @jkuat.ac.ke (lecturers), or individually authorized accounts. Unsupported
+          Google accounts cannot be used.
         </Body>
+        {hintText ? (
+          <View style={styles.hintBox}>
+            <Body style={styles.hintDetail}>{hintText}</Body>
+          </View>
+        ) : null}
         {masked ? (
           <View style={styles.emailPill}>
             <Ionicons name="mail-outline" size={18} color={colors.textMuted} />
@@ -38,10 +52,10 @@ export default function GoogleUnsupportedEmail() {
         <View style={styles.list}>
           <Text style={styles.listTitle}>Allowed domains</Text>
           <Row text="@students.jkuat.ac.ke — students" />
-          <Row text="@jkuat.ac.ke — staff" />
+          <Row text="@jkuat.ac.ke — lecturers & staff" />
         </View>
         <Body muted style={styles.hint}>
-          Sign in with a Google account that uses one of these addresses, or use email and a verification code on the previous screen.
+          Use a Google account on an allowed domain, or go back and sign in with email and your verification code.
         </Body>
         <Button
           title="Back to sign in"
@@ -83,6 +97,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   lead: { textAlign: 'center', lineHeight: 22, marginBottom: spacing.md },
+  hintBox: {
+    backgroundColor: colors.bgSubtle,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  hintDetail: { fontSize: 14, color: colors.text, lineHeight: 20, textAlign: 'center' },
   emailPill: {
     flexDirection: 'row',
     alignItems: 'center',

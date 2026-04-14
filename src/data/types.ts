@@ -7,6 +7,14 @@ export type User = {
   email: string;
   programme?: string;
   department?: string;
+  /** Degree programme (FK to courses.id). Required for students to see classes and sign in. */
+  courseId?: string;
+};
+
+export type Course = {
+  id: string;
+  name: string;
+  sortOrder: number;
 };
 
 export type ClassUnit = {
@@ -19,6 +27,8 @@ export type ClassUnit = {
   schedule: { start: string; end: string; day: string };
   enrolledStudentIds: string[];
   geofence: { latitude: number; longitude: number; radius: number };
+  /** Degree this class is offered under (students on this degree see the unit). */
+  courseId: string;
 };
 
 export type Session = {

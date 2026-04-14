@@ -1,6 +1,6 @@
 <!--
   Paste into Supabase: Authentication → Email Templates → Magic Link
-  (Passwordless email uses this template; {{ .Token }} is the 6-digit OTP.)
+  (Passwordless email: {{ .Token }} is the numeric OTP — use 6 digits in Auth → Providers → Email to match the app.)
   OTP only — no magic link / {{ .ConfirmationURL }}.
 -->
 <!DOCTYPE html>
@@ -33,7 +33,7 @@
                 Use this one-time code to sign in to the GPS attendance app:
               </p>
               <p style="margin:0 0 24px;text-align:center;">
-                <span style="display:inline-block;padding:14px 28px;font-size:28px;font-weight:700;letter-spacing:8px;color:#1B5E20;background-color:#E8F5E9;border-radius:10px;border:2px solid #1B5E20;">
+                <span style="display:inline-block;padding:14px 28px;font-size:28px;font-weight:700;letter-spacing:6px;color:#1B5E20;background-color:#E8F5E9;border-radius:10px;border:2px solid #1B5E20;">
                   {{ .Token }}
                 </span>
               </p>

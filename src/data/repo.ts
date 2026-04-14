@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
-import { AttendanceRecord, ClassUnit, Session, User } from './types';
+import { AttendanceRecord, ClassUnit, Course, Session, User } from './types';
 
 const CURRENT_USER = 'ae.currentUser';
 
@@ -13,6 +13,7 @@ type DbProfile = {
   role: 'student' | 'lecturer';
   programme: string | null;
   department: string | null;
+  course_id: string | null;
 };
 type DbUnit = {
   id: string; code: string; name: string; room: string;
@@ -20,7 +21,9 @@ type DbUnit = {
   schedule: { start: string; end: string; day: string };
   enrolled_student_ids: string[];
   geofence: { latitude: number; longitude: number; radius: number };
+  course_id: string | null;
 };
+type DbCourse = { id: string; name: string; sort_order: number };
 type DbSession = {
   id: string; unit_id: string; unit_code: string; unit_name: string; room: string;
   lecturer_id: string;
@@ -39,11 +42,28 @@ type DbAttendance = {
 const toUser = (p: DbProfile): User => ({
   id: p.id, email: p.email, name: p.name, role: p.role,
   programme: p.programme ?? undefined, department: p.department ?? undefined,
+  courseId: p.course_id ?? undefined,
+});
+const toCourse = (c: DbCourse): Course => ({
+  id: c.id, name: c.name, sortOrder: c.sort_order,
 });
 const toUnit = (u: DbUnit): ClassUnit => ({
   id: u.id, code: u.code, name: u.name, room: u.room,
   lecturerId: u.lecturer_id, lecturerName: u.lecturer_name,
   schedule: u.schedule, enrolledStudentIds: u.enrolled_student_ids, geofence: u.geofence,
+  courseId: u.course_id ?? 'CRS01',
+});
+const fromClassUnitRow = (u: ClassUnit) => ({
+  id: u.id,
+  code: u.code,
+  name: u.name,
+  room: u.room,
+  lecturer_id: u.lecturerId,
+  lecturer_name: u.lecturerName,
+  schedule: u.schedule,
+  enrolled_student_ids: u.enrolledStudentIds,
+  geofence: u.geofence,
+  course_id: u.courseId,
 });
 const toSession = (s: DbSession): Session => ({
   id: s.id, unitId: s.unit_id, unitCode: s.unit_code, unitName: s.unit_name, room: s.room,
@@ -77,15 +97,45 @@ export const repo = {
   async getUserById(id: string): Promise<User | undefined> {
     const { data } = await supabase
       .from('profiles')
-      .select('id,email,name,role,programme,department')
-      .ilike('id', id)
+      .select('id,email,name,role,programme,department,course_id')
+      .eq('id', id)
       .maybeSingle();
     return data ? toUser(data as DbProfile) : undefined;
+  },
+  async fetchProfileById(id: string): Promise<User | null> {
+    const u = await this.getUserById(id);
+    return u ?? null;
   },
   async getUsers(): Promise<User[]> {
     const { data } = await supabase
       .from('profiles')
-      .select('id,email,name,role,programme,department');
+      .select('id,email,name,role,programme,department,course_id');
+    return (data as DbProfile[] | null)?.map(toUser) ?? [];
+  },
+
+  async getCourses(): Promise<Course[]> {
+    const { data, error } = await supabase
+      .from('courses')
+      .select('id,name,sort_order')
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    return (data as DbCourse[] | null)?.map(toCourse) ?? [];
+  },
+
+  async updateStudentCourse(userId: string, courseId: string, courseName: string): Promise<void> {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ course_id: courseId, programme: courseName })
+      .eq('id', userId);
+    if (error) throw error;
+  },
+
+  async getStudentsForCourse(courseId: string): Promise<User[]> {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id,email,name,role,programme,department,course_id')
+      .eq('role', 'student')
+      .eq('course_id', courseId);
     return (data as DbProfile[] | null)?.map(toUser) ?? [];
   },
 
@@ -95,10 +145,19 @@ export const repo = {
     return (data as DbUnit[] | null)?.map(toUnit) ?? [];
   },
   async getUnitsForStudent(sid: string): Promise<ClassUnit[]> {
-    const { data } = await supabase
-      .from('units').select('*')
-      .contains('enrolled_student_ids', [sid]);
+    const profile = await this.getUserById(sid);
+    if (!profile?.courseId) return [];
+    const { data } = await supabase.from('units').select('*').eq('course_id', profile.courseId);
     return (data as DbUnit[] | null)?.map(toUnit) ?? [];
+  },
+  async createUnit(u: ClassUnit): Promise<ClassUnit> {
+    const { data, error } = await supabase
+      .from('units')
+      .insert(fromClassUnitRow(u))
+      .select()
+      .single();
+    if (error) throw error;
+    return toUnit(data as DbUnit);
   },
   async getUnitsForLecturer(lid: string): Promise<ClassUnit[]> {
     const { data } = await supabase

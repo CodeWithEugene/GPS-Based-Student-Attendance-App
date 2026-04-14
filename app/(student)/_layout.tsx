@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StudentCourseGate } from '../../src/components/StudentCourseGate';
 import { colors } from '../../src/theme';
 import { useAuth } from '../../src/store';
 
@@ -22,6 +23,7 @@ export default function StudentTabs() {
   if (user.role !== 'student') return <Redirect href="/(lecturer)/dashboard" />;
 
   return (
+    <StudentCourseGate>
     <Tabs
       screenOptions={({ route }) => ({
         headerShown: false,
@@ -56,6 +58,7 @@ export default function StudentTabs() {
       <Tabs.Screen name="help" options={{ href: null }} />
       <Tabs.Screen name="denied" options={{ href: null }} />
       <Tabs.Screen name="help-fail" options={{ href: null }} />
-    </Tabs>
+       </Tabs>
+    </StudentCourseGate>
   );
 }

@@ -1,21 +1,31 @@
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Image, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Body, Button, Input } from '../../src/components/UI';
 import { GoogleIcon } from '../../src/components/GoogleIcon';
 import { colors, spacing } from '../../src/theme';
 import { getSupabaseConfigError, supabase } from '../../src/lib/supabase';
-import { isJkuatEmail } from '../../src/lib/auth-helpers';
+import { isAllowedSignInEmail } from '../../src/lib/auth-helpers';
 import { signInWithGoogle } from '../../src/lib/google-auth';
 import { formatAuthErrorForDisplay } from '../../src/lib/auth-errors';
 
 export default function Login() {
   const router = useRouter();
+  const { oauthError } = useLocalSearchParams<{ oauthError?: string }>();
   const [email, setEmail] = useState('');
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof oauthError !== 'string' || !oauthError) return;
+    try {
+      setErr(decodeURIComponent(oauthError));
+    } catch {
+      setErr(oauthError);
+    }
+  }, [oauthError]);
 
   const onContinue = async () => {
     Keyboard.dismiss();
@@ -23,9 +33,11 @@ export default function Login() {
     const configError = getSupabaseConfigError();
     if (configError) return setErr(configError);
     const normalized = email.trim().toLowerCase();
-    if (!normalized) return setErr('Please enter your JKUAT email address.');
-    if (!isJkuatEmail(normalized)) {
-      return setErr('Only @students.jkuat.ac.ke or @jkuat.ac.ke emails are allowed.');
+    if (!normalized) return setErr('Please enter your email address.');
+    if (!isAllowedSignInEmail(normalized)) {
+      return setErr(
+        'Use your @students.jkuat.ac.ke or @jkuat.ac.ke address, or an authorized account.',
+      );
     }
     setLoading(true);
     try {
@@ -55,7 +67,10 @@ export default function Login() {
       const result = await signInWithGoogle();
       if (!result.ok) {
         if (result.reason === 'unsupported_email') {
-          router.replace({ pathname: '/(auth)/google-unsupported', params: { email: result.email } });
+          router.replace({
+            pathname: '/(auth)/google-unsupported',
+            params: result.email ? { email: result.email } : {},
+          });
           return;
         }
         setErr(result.message);
@@ -73,15 +88,15 @@ export default function Login() {
         <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
         <Text style={styles.title}>Welcome back</Text>
         <Body muted style={{ textAlign: 'center' }}>
-          Students: @students.jkuat.ac.ke · Staff/lecturers: @jkuat.ac.ke. We’ll email you a 6-digit code.
+          Students: @students.jkuat.ac.ke · Lecturers: @jkuat.ac.ke. We’ll email you a verification code.
         </Body>
         <Body muted style={{ textAlign: 'center', fontSize: 13, marginTop: -4 }}>
           Lecturers schedule classes and set sign-in locations; students only sign attendance on site.
         </Body>
         <View style={{ height: 12 }} />
-        <Text style={styles.label}>JKUAT email</Text>
+        <Text style={styles.label}>Email</Text>
         <Input
-          placeholder="yourname@students.jkuat.ac.ke"
+          placeholder="you@students.jkuat.ac.ke or you@jkuat.ac.ke"
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
@@ -113,7 +128,7 @@ export default function Login() {
 
         <View style={{ flex: 1 }} />
         <Body muted style={{ textAlign: 'center', fontSize: 12 }}>
-          Access is restricted to @students.jkuat.ac.ke and @jkuat.ac.ke accounts.
+          Sign-in is limited to JKUAT student/staff domains (lecturers use @jkuat.ac.ke unless individually authorized).
         </Body>
       </View>
     </SafeAreaView>

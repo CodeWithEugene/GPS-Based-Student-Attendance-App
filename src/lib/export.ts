@@ -15,7 +15,11 @@ export function buildSessionCsv(opts: {
   const { session, unit, records, users } = opts;
   const header = ['Student ID', 'Student Name', 'Status', 'Signed At', 'Latitude', 'Longitude', 'Overridden'];
   const recordMap = new Map(records.map(r => [r.studentId, r]));
-  const rows = unit.enrolledStudentIds.map(sid => {
+  const rosterIds =
+    unit.enrolledStudentIds.length > 0
+      ? unit.enrolledStudentIds
+      : users.filter(u => u.role === 'student' && u.courseId === unit.courseId).map(u => u.id);
+  const rows = rosterIds.map(sid => {
     const u = users.find(x => x.id === sid);
     const r = recordMap.get(sid);
     return [
