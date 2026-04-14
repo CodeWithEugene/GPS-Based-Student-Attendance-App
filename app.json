@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "GPS-Based Student Attendance App",
+    "slug": "gps-attendance",
+    "scheme": "gpsattendance",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1B5E20"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "ke.ac.jkuat.gpsattendance",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app needs your location to verify you are inside the classroom when signing attendance.",
+        "NSFaceIDUsageDescription": "Use Face ID to log in quickly and securely."
+      }
+    },
+    "android": {
+      "package": "ke.ac.jkuat.gpsattendance",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1B5E20"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "This app needs your location to verify classroom attendance."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Use Face ID to log in securely."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#1B5E20"
+        }
+      ],
+      "expo-web-browser"
+    ]
+  }
+}
