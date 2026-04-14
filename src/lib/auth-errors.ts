@@ -56,3 +56,31 @@ export function formatAuthErrorForDisplay(err: unknown): string {
   if (!raw) return 'Something went wrong. Please try again.';
   return raw.length > 400 ? `${raw.slice(0, 400)}…` : raw;
 }
+
+/**
+ * Wrong-code lockout should not advance when the failure is network / server / rate limit.
+ */
+export function shouldCountOtpFailedAttempt(err: unknown): boolean {
+  if (!err) return true;
+  const status =
+    err && typeof err === 'object' && 'status' in err
+      ? Number((err as { status?: number }).status)
+      : NaN;
+  if (!Number.isNaN(status) && (status >= 500 || status === 429)) return false;
+
+  const raw =
+    err && typeof err === 'object' && 'message' in err
+      ? String((err as { message?: string }).message ?? '')
+      : '';
+  if (raw.toLowerCase().includes('network request failed')) return false;
+  const t = raw.trim();
+  if (t.startsWith('{')) {
+    try {
+      const o = JSON.parse(t) as { status?: number };
+      if (typeof o.status === 'number' && (o.status >= 500 || o.status === 429)) return false;
+    } catch {
+      /* ignore */
+    }
+  }
+  return true;
+}

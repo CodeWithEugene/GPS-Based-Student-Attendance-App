@@ -32,7 +32,7 @@ export default function OtpSent() {
   }, []);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top', 'bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['top', 'bottom']}>
       <View style={{ flex: 1, padding: spacing.xl, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
         <View style={styles.iconWrap}>
           <Ionicons name="mail-outline" size={72} color={colors.green} />

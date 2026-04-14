@@ -5,13 +5,15 @@ import * as LocalAuth from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GreenHeader } from '../../src/components/GreenHeader';
 import { Body } from '../../src/components/UI';
 import { colors, spacing } from '../../src/theme';
 import { useAuth } from '../../src/store';
 
 export default function LecturerProfile() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
   const [bio, setBio] = useState(false);
   const [radius, setRadius] = useState(30);
@@ -54,8 +56,8 @@ export default function LecturerProfile() {
   if (!user) return null;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top']}>
-      <View style={styles.hdr}><Text style={styles.hdrTitle}>Profile</Text></View>
+    <View style={{ flex: 1, backgroundColor: colors.bgCanvas }}>
+      <GreenHeader title="Profile" centered />
       <View style={{ alignItems: 'center', padding: spacing.lg }}>
         <View style={styles.avatar}>
           <Text style={{ fontSize: 30, fontWeight: '800', color: colors.green }}>{user.name[0]}</Text>
@@ -77,12 +79,12 @@ export default function LecturerProfile() {
       <View style={{ flex: 1 }} />
       <Pressable
         onPress={async () => { await signOut(); router.replace('/'); }}
-        style={styles.logout}
+        style={[styles.logout, { marginBottom: spacing.lg + insets.bottom }]}
       >
         <Ionicons name="log-out-outline" size={22} color="#fff" />
         <Text style={{ color: '#fff', fontWeight: '700' }}>Log Out</Text>
       </Pressable>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -98,9 +100,7 @@ function Row({ icon, label, right, onPress }: any) {
 function Divider() { return <View style={{ height: 1, backgroundColor: colors.border }} />; }
 
 const styles = StyleSheet.create({
-  hdr: { backgroundColor: colors.green, padding: spacing.lg },
-  hdrTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
   avatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: colors.greenLight, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: colors.green },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
-  logout: { backgroundColor: colors.red, padding: 14, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, margin: spacing.lg },
+  logout: { backgroundColor: colors.red, padding: 14, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: spacing.lg, marginTop: spacing.sm },
 });

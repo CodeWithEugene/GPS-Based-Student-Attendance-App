@@ -20,7 +20,7 @@ export default function Help() {
   const [open, setOpen] = useState<number | null>(0);
   const items = FAQ.filter(f => f.q.toLowerCase().includes(q.toLowerCase()));
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['bottom']}>
       <TopBar title="Help & FAQ" tone="green" back />
       <View style={{ padding: spacing.lg }}>
         <Input placeholder="Search FAQs…" value={q} onChangeText={setQ} />

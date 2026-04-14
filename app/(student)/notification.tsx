@@ -30,7 +30,7 @@ export default function NotificationDetail() {
 
   if (!session) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['bottom']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['bottom']}>
         <TopBar title="Session" tone="green" back />
         <View style={{ padding: spacing.xl }}><Body muted>Session not found.</Body></View>
       </SafeAreaView>
@@ -40,7 +40,7 @@ export default function NotificationDetail() {
   const s = (left % 60).toString().padStart(2, '0');
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['bottom']}>
       <TopBar title="Attendance Alert" tone="green" back />
       <View style={{ padding: spacing.lg, gap: spacing.md }}>
         <Text style={{ fontSize: 22, fontWeight: '800', color: colors.text }}>{session.unitName}</Text>

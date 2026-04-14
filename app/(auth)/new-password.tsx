@@ -39,7 +39,7 @@ export default function NewPassword() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['bottom']}>
       <TopBar title="Set New Password" tone="green" back />
       <View style={{ flex: 1, padding: spacing.xl, gap: spacing.md }}>
         <Text style={styles.label}>New password</Text>

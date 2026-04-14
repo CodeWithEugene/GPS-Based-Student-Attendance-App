@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GreenHeader } from '../../src/components/GreenHeader';
 import { Body, Button, Pill } from '../../src/components/UI';
 import { colors, spacing } from '../../src/theme';
 import { repo } from '../../src/data/repo';
@@ -11,6 +12,7 @@ import { useAuth } from '../../src/store';
 
 export default function Active() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [session, setSession] = useState<Session | null>(null);
   const [unit, setUnit] = useState<ClassUnit | null>(null);
@@ -54,9 +56,9 @@ export default function Active() {
 
   if (!session || !unit) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top']}>
-        <View style={styles.hdr}><Text style={styles.hdrTitle}>Active Session</Text></View>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl }}>
+      <View style={{ flex: 1, backgroundColor: colors.bgCanvas }}>
+        <GreenHeader title="Active Session" centered />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, paddingBottom: spacing.xl + insets.bottom }}>
           <Ionicons name="radio-outline" size={72} color={colors.textMuted} />
           <Text style={{ fontSize: 18, fontWeight: '700', marginTop: 12 }}>No live session</Text>
           <Body muted style={{ textAlign: 'center', marginTop: 4 }}>
@@ -64,7 +66,7 @@ export default function Active() {
           </Body>
           <Button title="Go Home" variant="outline" onPress={() => router.push('/(lecturer)/dashboard')} style={{ marginTop: 20, minWidth: 200 }} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -78,8 +80,11 @@ export default function Active() {
   const m = Math.floor(left / 60).toString().padStart(2, '0');
   const s = (left % 60).toString().padStart(2, '0');
 
+  const footerReserve = spacing.lg * 2 + 52 + insets.bottom;
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top']}>
+    <View style={{ flex: 1, backgroundColor: colors.bgCanvas }}>
+      <GreenHeader title="Live session" centered />
       <View style={styles.banner}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.green }} />
@@ -94,13 +99,13 @@ export default function Active() {
       <FlatList
         data={rows}
         keyExtractor={r => r.id}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: footerReserve }}
         renderItem={({ item }) => {
           const signed = !!item.record;
           return (
             <Pressable
               onPress={() => router.push({ pathname: '/(lecturer)/student/[id]', params: { id: item.id, sid: session.id } })}
-              style={[styles.row, { backgroundColor: signed ? colors.greenLight : '#fff' }]}
+              style={[styles.row, { backgroundColor: signed ? colors.greenLight : colors.white }]}
             >
               <View style={{ flex: 1 }}>
                 <Text style={{ fontWeight: '700' }}>{item.name}</Text>
@@ -116,17 +121,15 @@ export default function Active() {
         }}
       />
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: spacing.lg + insets.bottom }]}>
         <Button title="End Session" variant="danger" onPress={() => router.push('/(lecturer)/end')} />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  hdr: { backgroundColor: colors.green, padding: spacing.lg },
-  hdrTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
   banner: { backgroundColor: colors.goldLight, padding: spacing.lg, borderBottomWidth: 3, borderBottomColor: colors.gold },
   row: { flexDirection: 'row', alignItems: 'center', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 8 },
-  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: spacing.lg, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: colors.border },
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: spacing.lg, backgroundColor: colors.white, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
 });

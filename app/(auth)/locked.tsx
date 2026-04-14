@@ -16,7 +16,7 @@ export default function Locked() {
   const m = Math.floor(left / 60).toString().padStart(2, '0');
   const s = (left % 60).toString().padStart(2, '0');
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top', 'bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['top', 'bottom']}>
       <View style={{ flex: 1, padding: spacing.xl, alignItems: 'center', justifyContent: 'center' }}>
         <View style={styles.iconWrap}>
           <Ionicons name="lock-closed" size={72} color={colors.red} />

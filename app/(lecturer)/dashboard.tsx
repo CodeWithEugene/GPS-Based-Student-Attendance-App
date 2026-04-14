@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { FlatList, Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GreenHeader } from '../../src/components/GreenHeader';
 import { Body, Button, Card } from '../../src/components/UI';
 import { colors, spacing } from '../../src/theme';
 import { repo } from '../../src/data/repo';
@@ -11,6 +12,7 @@ import { useAuth } from '../../src/store';
 
 export default function LecturerDashboard() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [units, setUnits] = useState<ClassUnit[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -33,15 +35,19 @@ export default function LecturerDashboard() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
+  const listPadBottom = spacing.lg + Math.max(insets.bottom, 12) + 56;
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top']}>
-      <View style={styles.hdr}>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: '#D9E7DB', fontSize: 13 }}>{greeting},</Text>
-          <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700' }}>{user.name}</Text>
+    <View style={{ flex: 1, backgroundColor: colors.bgCanvas }}>
+      <GreenHeader>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' }}>{greeting},</Text>
+            <Text style={{ color: '#fff', fontSize: 22, fontWeight: '800', marginTop: 2 }}>{user.name}</Text>
+          </View>
+          <Ionicons name="notifications-outline" size={26} color="#fff" />
         </View>
-        <Ionicons name="notifications-outline" size={24} color="#fff" />
-      </View>
+      </GreenHeader>
 
       {units.length === 0 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl }}>
@@ -55,7 +61,7 @@ export default function LecturerDashboard() {
         <FlatList
           data={units}
           keyExtractor={u => u.id}
-          contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
+          contentContainerStyle={{ padding: spacing.lg, paddingBottom: listPadBottom, gap: spacing.md }}
           renderItem={({ item }) => {
             const live = sessions.find(s => s.unitId === item.id && s.status === 'live');
             const ended = sessions.filter(s => s.unitId === item.id && s.status === 'ended').sort((a,b)=>b.endedAt!.localeCompare(a.endedAt!))[0];
@@ -86,10 +92,6 @@ export default function LecturerDashboard() {
           }}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  hdr: { backgroundColor: colors.green, padding: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: 10 },
-});

@@ -16,12 +16,14 @@ WebBrowser.maybeCompleteAuthSession();
  * 3. Parse the tokens from the redirect URL, hand them to supabase.auth.setSession.
  * 4. Look up the matching JKUAT profile by email and link it to the auth user.
  */
-export async function signInWithGoogle(): Promise<
+export type SignInWithGoogleResult =
   | { ok: true; user: User }
-  | { ok: false; error: string }
-> {
+  | { ok: false; reason: 'unsupported_email'; email: string }
+  | { ok: false; reason: 'other'; message: string };
+
+export async function signInWithGoogle(): Promise<SignInWithGoogleResult> {
   const configError = getSupabaseConfigError();
-  if (configError) return { ok: false, error: configError };
+  if (configError) return { ok: false, reason: 'other', message: configError };
 
   const redirectTo = Linking.createURL('auth-callback');
 
@@ -32,13 +34,14 @@ export async function signInWithGoogle(): Promise<
   if (error || !data?.url) {
     return {
       ok: false,
-      error: error?.message ?? 'Could not start Google sign-in. Check Supabase OAuth redirect settings.',
+      reason: 'other',
+      message: error?.message ?? 'Could not start Google sign-in. Check Supabase OAuth redirect settings.',
     };
   }
 
   const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
   if (result.type !== 'success' || !result.url) {
-    return { ok: false, error: 'Google sign-in was cancelled.' };
+    return { ok: false, reason: 'other', message: 'Google sign-in was cancelled.' };
   }
 
   // Supabase returns tokens in the URL fragment (#access_token=...&refresh_token=...)
@@ -47,7 +50,7 @@ export async function signInWithGoogle(): Promise<
   const access_token = params.get('access_token');
   const refresh_token = params.get('refresh_token');
   if (!access_token || !refresh_token) {
-    return { ok: false, error: 'Google did not return valid tokens.' };
+    return { ok: false, reason: 'other', message: 'Google did not return valid tokens.' };
   }
 
   const { data: sessionData, error: setErr } = await supabase.auth.setSession({
@@ -55,16 +58,13 @@ export async function signInWithGoogle(): Promise<
     refresh_token,
   });
   if (setErr || !sessionData.user?.email) {
-    return { ok: false, error: setErr?.message ?? 'Could not establish session.' };
+    return { ok: false, reason: 'other', message: setErr?.message ?? 'Could not establish session.' };
   }
 
   const email = sessionData.user.email.toLowerCase();
   if (!isJkuatEmail(email)) {
     await supabase.auth.signOut();
-    return {
-      ok: false,
-      error: `Access restricted — ${email} is not a JKUAT address. Use @students.jkuat.ac.ke or @jkuat.ac.ke.`,
-    };
+    return { ok: false, reason: 'unsupported_email', email };
   }
 
   try {
@@ -73,6 +73,6 @@ export async function signInWithGoogle(): Promise<
     return { ok: true, user };
   } catch (e: any) {
     await supabase.auth.signOut();
-    return { ok: false, error: e?.message ?? 'Could not set up your profile.' };
+    return { ok: false, reason: 'other', message: e?.message ?? 'Could not set up your profile.' };
   }
 }

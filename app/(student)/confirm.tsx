@@ -10,7 +10,7 @@ export default function Confirm() {
   const { ok, unit, code, lat, lng, at, reason } = useLocalSearchParams<any>();
   const success = ok === '1';
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top', 'bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['top', 'bottom']}>
       <View style={{ flex: 1, padding: spacing.xl, alignItems: 'center', justifyContent: 'center' }}>
         <View style={[styles.wrap, { backgroundColor: success ? colors.greenLight : colors.redLight }]}>
           <Ionicons name={success ? 'checkmark' : 'close'} size={80} color={success ? colors.green : colors.red} />

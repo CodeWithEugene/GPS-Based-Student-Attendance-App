@@ -5,7 +5,8 @@ import * as Location from 'expo-location';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Circle, Marker, PROVIDER_DEFAULT } from 'react-native-maps';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GreenHeader } from '../../src/components/GreenHeader';
 import { Body, Button } from '../../src/components/UI';
 import { colors, radius, spacing } from '../../src/theme';
 import { repo } from '../../src/data/repo';
@@ -15,6 +16,7 @@ import { useAuth } from '../../src/store';
 
 export default function SignAttendance() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const params = useLocalSearchParams<{ sessionId?: string }>();
   const [session, setSession] = useState<Session | null>(null);
@@ -67,6 +69,10 @@ export default function SignAttendance() {
       let cancelled = false;
       (async () => {
         const { status } = await Location.getForegroundPermissionsAsync();
+        if (status === 'denied') {
+          if (!cancelled) setPermErr(true);
+          return;
+        }
         if (status !== 'granted') {
           const req = await Location.requestForegroundPermissionsAsync();
           if (req.status !== 'granted') {
@@ -89,35 +95,35 @@ export default function SignAttendance() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top']}>
-        <View style={styles.hdr}><Text style={styles.hdrTitle}>Sign Attendance</Text></View>
+      <View style={{ flex: 1, backgroundColor: colors.bgCanvas }}>
+        <GreenHeader title="Sign attendance" centered />
         <View style={styles.centerBox}>
           <ActivityIndicator size="large" color={colors.green} />
           <Body muted style={{ marginTop: 10 }}>Loading session…</Body>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (fetchError) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top']}>
-        <View style={styles.hdr}><Text style={styles.hdrTitle}>Sign Attendance</Text></View>
-        <View style={styles.centerBox}>
+      <View style={{ flex: 1, backgroundColor: colors.bgCanvas }}>
+        <GreenHeader title="Sign attendance" centered />
+        <View style={[styles.centerBox, { paddingBottom: insets.bottom + spacing.lg }]}>
           <Ionicons name="cloud-offline-outline" size={72} color={colors.red} />
           <Text style={{ fontSize: 18, fontWeight: '800', marginTop: 12, color: colors.red }}>Couldn't load</Text>
           <Body muted style={{ textAlign: 'center', marginTop: 4 }}>{fetchError}</Body>
           <Button title="Retry" variant="secondary" onPress={load} style={{ marginTop: 16, minWidth: 200 }} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!session) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top']}>
-        <View style={styles.hdr}><Text style={styles.hdrTitle}>Sign Attendance</Text></View>
-        <View style={styles.centerBox}>
+      <View style={{ flex: 1, backgroundColor: colors.bgCanvas }}>
+        <GreenHeader title="Sign attendance" centered />
+        <View style={[styles.centerBox, { paddingBottom: insets.bottom + spacing.lg }]}>
           <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: colors.goldLight, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="time-outline" size={64} color={colors.gold} />
           </View>
@@ -127,7 +133,7 @@ export default function SignAttendance() {
           </Body>
           <Button title="Back to Dashboard" variant="outline" style={{ marginTop: 20 }} onPress={() => router.push('/(student)/dashboard')} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -204,8 +210,8 @@ export default function SignAttendance() {
       : `You are outside — move closer${distance != null ? ` (${distance}m away)` : ''}`;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top']}>
-      <View style={styles.hdr}><Text style={styles.hdrTitle}>Sign Attendance</Text></View>
+    <View style={{ flex: 1, backgroundColor: colors.bgCanvas }}>
+      <GreenHeader title="Sign attendance" centered />
 
       <View style={{ height: 280 }}>
         <MapView
@@ -229,7 +235,7 @@ export default function SignAttendance() {
         </MapView>
       </View>
 
-      <View style={{ padding: spacing.lg, gap: 12 }}>
+      <View style={{ padding: spacing.lg, gap: 12, paddingBottom: spacing.lg + Math.max(insets.bottom, 12) + 8 }}>
         <View style={[styles.status, { backgroundColor: inside ? colors.greenLight : colors.redLight }]}>
           <Ionicons name={inside ? 'checkmark-circle' : 'warning'} size={22} color={inside ? colors.green : colors.red} />
           <Text style={{ color: inside ? colors.green : colors.red, fontWeight: '700', flex: 1 }}>
@@ -267,13 +273,14 @@ export default function SignAttendance() {
           </Pressable>
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 function PermDenied({ onBack }: { onBack: () => void }) {
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top', 'bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['bottom']}>
+      <GreenHeader title="Location needed" centered />
       <View style={{ flex: 1, padding: spacing.xl, alignItems: 'center', justifyContent: 'center' }}>
         <View style={{ width: 140, height: 140, borderRadius: 70, backgroundColor: colors.redLight, alignItems: 'center', justifyContent: 'center' }}>
           <Ionicons name="location-outline" size={64} color={colors.red} />
@@ -293,8 +300,6 @@ function PermDenied({ onBack }: { onBack: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  hdr: { backgroundColor: colors.green, padding: 14, alignItems: 'center' },
-  hdrTitle: { color: '#fff', fontWeight: '700', fontSize: 17 },
   status: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: radius.md },
   centerBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
 });

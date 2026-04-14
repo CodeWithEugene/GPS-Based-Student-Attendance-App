@@ -8,7 +8,7 @@ import { colors, spacing } from '../../src/theme';
 import { supabase } from '../../src/lib/supabase';
 import { ensureProfileForSession } from '../../src/lib/auth-helpers';
 import { useAuth } from '../../src/store';
-import { formatAuthErrorForDisplay } from '../../src/lib/auth-errors';
+import { formatAuthErrorForDisplay, shouldCountOtpFailedAttempt } from '../../src/lib/auth-errors';
 
 export default function OtpEntry() {
   const router = useRouter();
@@ -53,14 +53,20 @@ export default function OtpEntry() {
       });
 
       if (error || !data.session || !data.user) {
-        const a = attempts + 1;
-        setAttempts(a);
-        if (a >= 3) return router.replace('/(auth)/locked');
+        const countThisFailure = !error || shouldCountOtpFailedAttempt(error);
+        let nextAttempts = attempts;
+        if (countThisFailure) {
+          nextAttempts = attempts + 1;
+          setAttempts(nextAttempts);
+          if (nextAttempts >= 3) return router.replace('/(auth)/locked');
+        }
         if (error) {
           setErr(formatAuthErrorForDisplay(error));
           return;
         }
-        setErr(`Incorrect code. ${3 - a} attempt${3 - a === 1 ? '' : 's'} left.`);
+        setErr(
+          `Incorrect code. ${3 - nextAttempts} attempt${3 - nextAttempts === 1 ? '' : 's'} left.`,
+        );
         return;
       }
 
@@ -86,7 +92,7 @@ export default function OtpEntry() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['bottom']}>
       <TopBar title="Verify Your Identity" tone="green" back />
       <View style={{ flex: 1, padding: spacing.xl, gap: spacing.md }}>
         <Text style={styles.sub}>Enter the 6-digit code sent to {email ?? 'your email'}.</Text>

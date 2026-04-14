@@ -1,7 +1,8 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GreenHeader } from '../../src/components/GreenHeader';
 import { Body, Card, Pill } from '../../src/components/UI';
 import { colors, spacing } from '../../src/theme';
 import { repo } from '../../src/data/repo';
@@ -10,6 +11,7 @@ import { useAuth } from '../../src/store';
 
 type Tab = 'all' | 'course' | 'month';
 export default function History() {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [units, setUnits] = useState<ClassUnit[]>([]);
@@ -32,9 +34,11 @@ export default function History() {
   const pct = records.length ? Math.round((records.filter(r => r.status !== 'absent').length / records.length) * 100) : 100;
   const risk = pct >= 75 ? { label: 'On track', color: colors.green } : pct >= 50 ? { label: 'At risk', color: colors.gold } : { label: 'Critical', color: colors.red };
 
+  const listPadBottom = spacing.lg + Math.max(insets.bottom, 12) + 56;
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top']}>
-      <View style={styles.hdr}><Text style={styles.hdrTitle}>My Attendance</Text></View>
+    <View style={{ flex: 1, backgroundColor: colors.bgCanvas }}>
+      <GreenHeader title="My Attendance" centered />
       <FlatList
         data={records}
         keyExtractor={r => r.id}
@@ -64,7 +68,7 @@ export default function History() {
             <Body muted>No attendance records yet. Once you sign for a session, it will appear here.</Body>
           </View>
         }
-        contentContainerStyle={{ paddingBottom: 30 }}
+        contentContainerStyle={{ paddingBottom: listPadBottom }}
         renderItem={({ item }) => {
           const t = new Date(item.signedAt);
           const tone = item.status === 'present' ? 'success' : item.status === 'late' ? 'warn' : 'danger';
@@ -79,13 +83,11 @@ export default function History() {
           );
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  hdr: { backgroundColor: colors.green, padding: spacing.lg },
-  hdrTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
   tab: { paddingVertical: 6, paddingHorizontal: 4 },
   tabActive: { borderBottomWidth: 3, borderBottomColor: colors.gold },
   row: { flexDirection: 'row', alignItems: 'center', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },

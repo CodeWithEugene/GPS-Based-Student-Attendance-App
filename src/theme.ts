@@ -9,9 +9,12 @@ export const colors = {
   white: '#FFFFFF',
   text: '#1A1A1A',
   textMuted: '#6B6B6B',
-  border: '#E1E4E8',
+  textSubtle: '#8E9297',
+  border: '#E8EBEF',
   bg: '#FFFFFF',
-  bgSubtle: '#F7F8FA',
+  /** Screen background — slight cool tint reads more “app-like” than pure white */
+  bgCanvas: '#F4F6F8',
+  bgSubtle: '#F0F2F5',
 };
 
 export const spacing = {
@@ -24,11 +27,28 @@ export const spacing = {
 };
 
 export const radius = {
-  sm: 6,
-  md: 10,
-  lg: 14,
+  sm: 8,
+  md: 12,
+  lg: 16,
   xl: 22,
   pill: 999,
+};
+
+export const shadows = {
+  card: {
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  button: {
+    shadowColor: '#B71C1C',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 4,
+  },
 };
 
 export const typography = {

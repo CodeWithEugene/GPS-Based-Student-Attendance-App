@@ -53,7 +53,14 @@ export default function Login() {
     setGoogleLoading(true);
     try {
       const result = await signInWithGoogle();
-      if (!result.ok) { setErr(result.error); return; }
+      if (!result.ok) {
+        if (result.reason === 'unsupported_email') {
+          router.replace({ pathname: '/(auth)/google-unsupported', params: { email: result.email } });
+          return;
+        }
+        setErr(result.message);
+        return;
+      }
       router.replace(result.user.role === 'lecturer' ? '/(lecturer)/dashboard' : '/(student)/dashboard');
     } finally {
       setGoogleLoading(false);
@@ -61,12 +68,15 @@ export default function Login() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top', 'bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['top', 'bottom']}>
       <View style={{ flex: 1, padding: spacing.xl, gap: spacing.md }}>
         <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
         <Text style={styles.title}>Welcome back</Text>
         <Body muted style={{ textAlign: 'center' }}>
-          Sign in with your JKUAT email. We'll send you a 6-digit code.
+          Students: @students.jkuat.ac.ke · Staff/lecturers: @jkuat.ac.ke. We’ll email you a 6-digit code.
+        </Body>
+        <Body muted style={{ textAlign: 'center', fontSize: 13, marginTop: -4 }}>
+          Lecturers schedule classes and set sign-in locations; students only sign attendance on site.
         </Body>
         <View style={{ height: 12 }} />
         <Text style={styles.label}>JKUAT email</Text>

@@ -9,7 +9,7 @@ import { TopBar } from '../../src/components/TopBar';
 export default function HelpFail() {
   const router = useRouter();
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['bottom']}>
       <TopBar title="Need help?" tone="white" back />
       <View style={{ flex: 1, padding: spacing.xl, alignItems: 'center' }}>
         <View style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: colors.redLight, alignItems: 'center', justifyContent: 'center' }}>

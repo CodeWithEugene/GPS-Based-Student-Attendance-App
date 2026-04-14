@@ -9,7 +9,7 @@ import {
   View,
   ViewProps,
 } from 'react-native';
-import { colors, radius, spacing, typography } from '../theme';
+import { colors, radius, shadows, spacing, typography } from '../theme';
 
 type BtnVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 export function Button({
@@ -45,16 +45,19 @@ export function Button({
       : colors.white;
   const borderColor =
     variant === 'outline' ? colors.green : variant === 'ghost' ? 'transparent' : bg;
+  const showLift = variant === 'primary' || variant === 'danger';
   return (
     <Pressable
       disabled={disabled || loading}
       onPress={onPress}
       style={({ pressed }) => [
         styles.btn,
+        showLift && !disabled ? shadows.button : null,
         {
           backgroundColor: disabled ? '#C7CCD1' : bg,
           borderColor: disabled ? '#C7CCD1' : borderColor,
-          opacity: pressed ? 0.85 : 1,
+          opacity: pressed ? 0.88 : 1,
+          transform: [{ scale: pressed ? 0.98 : 1 }],
         },
         style,
       ]}
@@ -73,7 +76,7 @@ export function Button({
 
 export function Card({ style, children, ...rest }: ViewProps & { children?: React.ReactNode }) {
   return (
-    <View style={[styles.card, style]} {...rest}>
+    <View style={[styles.card, shadows.card, style]} {...rest}>
       {children}
     </View>
   );
@@ -173,12 +176,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   input: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderRadius: radius.md,
     paddingHorizontal: spacing.lg,
     height: 52,
     fontSize: 16,
     color: colors.text,
-    backgroundColor: colors.white,
+    backgroundColor: colors.bgSubtle,
   },
 });

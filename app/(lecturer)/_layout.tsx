@@ -1,18 +1,35 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../src/theme';
 import { repo } from '../../src/data/repo';
 import { useAuth } from '../../src/store';
 
 function LiveDot() {
-  return <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.gold, position: 'absolute', top: -2, right: -6 }} />;
+  return (
+    <View
+      style={{
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: colors.gold,
+        position: 'absolute',
+        top: -2,
+        right: -6,
+      }}
+    />
+  );
 }
 
 export default function LecturerTabs() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, 10);
+  const tabHeight = 54 + bottomPad;
   const [hasLive, setHasLive] = useState(false);
+
   useEffect(() => {
     const t = setInterval(async () => {
       if (!user) return;
@@ -22,14 +39,31 @@ export default function LecturerTabs() {
     return () => clearInterval(t);
   }, [user]);
 
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgCanvas }}>
+        <ActivityIndicator size="large" color={colors.green} />
+      </View>
+    );
+  }
+  if (!user) return <Redirect href="/" />;
+  if (user.role !== 'lecturer') return <Redirect href="/(student)/dashboard" />;
+
   return (
     <Tabs
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: colors.green,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { height: 64, paddingTop: 6, paddingBottom: 8, borderTopColor: colors.border },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarStyle: {
+          height: tabHeight,
+          paddingTop: 8,
+          paddingBottom: bottomPad,
+          backgroundColor: colors.white,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: colors.border,
+        },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginBottom: 2 },
         tabBarIcon: ({ color, focused }) => {
           const n: any = {
             dashboard: focused ? 'home' : 'home-outline',
@@ -47,7 +81,7 @@ export default function LecturerTabs() {
       })}
     >
       <Tabs.Screen name="dashboard" options={{ title: 'Home' }} />
-      <Tabs.Screen name="active" options={{ title: 'Active Session' }} />
+      <Tabs.Screen name="active" options={{ title: 'Live' }} />
       <Tabs.Screen name="reports" options={{ title: 'Reports' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
       <Tabs.Screen name="setup" options={{ href: null }} />

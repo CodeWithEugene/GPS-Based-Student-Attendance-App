@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GreenHeader } from '../../src/components/GreenHeader';
 import { Body, Card, Pill } from '../../src/components/UI';
 import { colors, radius, spacing } from '../../src/theme';
 import { repo } from '../../src/data/repo';
@@ -11,6 +12,7 @@ import { useAuth } from '../../src/store';
 
 export default function StudentDashboard() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [units, setUnits] = useState<ClassUnit[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -50,23 +52,25 @@ export default function StudentDashboard() {
 
   if (!user) return null;
 
+  const listPadBottom = spacing.lg + Math.max(insets.bottom, 12) + 56;
+
   if (units.length === 0) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top']}>
+      <View style={{ flex: 1, backgroundColor: colors.bgCanvas }}>
         <Header greeting={greeting} name={user.name.split(' ')[0]} />
         <EmptyState onView={() => router.push('/(student)/history')} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top']}>
+    <View style={{ flex: 1, backgroundColor: colors.bgCanvas }}>
       <Header greeting={greeting} name={user.name.split(' ')[0]} />
       <FlatList
         data={units}
         keyExtractor={u => u.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={colors.green} />}
-        contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
+        contentContainerStyle={{ padding: spacing.lg, paddingBottom: listPadBottom, gap: spacing.md }}
         ListHeaderComponent={
           <Card style={{ backgroundColor: colors.greenLight, borderColor: colors.greenLight }}>
             <Text style={{ color: colors.green, fontWeight: '700' }}>Attendance this semester</Text>
@@ -112,22 +116,36 @@ export default function StudentDashboard() {
           );
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 function Header({ greeting, name }: { greeting: string; name: string }) {
   return (
-    <View style={styles.header}>
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: '#D9E7DB', fontSize: 13 }}>{greeting},</Text>
-        <Text style={{ color: colors.white, fontSize: 20, fontWeight: '700' }}>{name}</Text>
+    <GreenHeader>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' }}>{greeting},</Text>
+          <Text style={{ color: colors.white, fontSize: 22, fontWeight: '800', marginTop: 2 }}>{name}</Text>
+        </View>
+        <View style={{ position: 'relative' }}>
+          <Ionicons name="notifications-outline" size={26} color={colors.white} />
+          <View
+            style={{
+              position: 'absolute',
+              top: -2,
+              right: -2,
+              width: 9,
+              height: 9,
+              borderRadius: 5,
+              backgroundColor: colors.red,
+              borderWidth: 2,
+              borderColor: colors.green,
+            }}
+          />
+        </View>
       </View>
-      <View style={{ position: 'relative' }}>
-        <Ionicons name="notifications-outline" size={24} color={colors.white} />
-        <View style={{ position: 'absolute', top: -4, right: -4, width: 10, height: 10, borderRadius: 5, backgroundColor: colors.red }} />
-      </View>
-    </View>
+    </GreenHeader>
   );
 }
 
@@ -147,7 +165,6 @@ function EmptyState({ onView }: { onView: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  header: { backgroundColor: colors.green, padding: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: 10 },
   bar: { height: 8, backgroundColor: '#fff', borderRadius: 4, overflow: 'hidden', marginTop: 10 },
   fill: { height: 8, borderRadius: 4 },
 });

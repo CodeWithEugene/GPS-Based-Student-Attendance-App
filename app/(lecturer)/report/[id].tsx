@@ -37,7 +37,7 @@ export default function SingleReport() {
   const signedMap = new Map(records.map(r => [r.studentId, r]));
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['bottom']}>
       <TopBar title="Session Report" tone="green" back />
       <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: 12 }}>
         <Text style={{ fontSize: 20, fontWeight: '800' }}>{session.unitName}</Text>

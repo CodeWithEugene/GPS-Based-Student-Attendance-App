@@ -1,12 +1,23 @@
 import { supabase } from './supabase';
 import { User } from '../data/types';
 
+/** Student accounts — student app: sign attendance only (geofence enforced). */
 const STUDENT_DOMAIN = '@students.jkuat.ac.ke';
+/** Staff/lecturer accounts — lecturer app: units, live sessions, reports, attendance. */
 const STAFF_DOMAIN = '@jkuat.ac.ke';
 
 export function isJkuatEmail(email: string) {
   const e = email.trim().toLowerCase();
   return e.endsWith(STUDENT_DOMAIN) || e.endsWith(STAFF_DOMAIN);
+}
+
+/** Partially hide an address for on-screen display (e.g. after OAuth). */
+export function maskEmailForDisplay(email: string) {
+  const [u, d] = email.trim().toLowerCase().split('@');
+  if (!d) return '••••';
+  const safeLocal = u ?? '';
+  const stars = Math.max(safeLocal.length - 2, 3);
+  return `${safeLocal.slice(0, 2)}${'*'.repeat(stars)}@${d}`;
 }
 
 export function roleFromEmail(email: string): 'student' | 'lecturer' {

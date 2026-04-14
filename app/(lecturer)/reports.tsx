@@ -1,7 +1,8 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GreenHeader } from '../../src/components/GreenHeader';
 import { Body, Button, Card, Pill } from '../../src/components/UI';
 import { colors, spacing } from '../../src/theme';
 import { repo } from '../../src/data/repo';
@@ -11,6 +12,7 @@ import { useAuth } from '../../src/store';
 
 export default function Reports() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [units, setUnits] = useState<ClassUnit[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -63,10 +65,12 @@ export default function Reports() {
     });
   })();
 
+  const scrollPadBottom = spacing.lg + Math.max(insets.bottom, 12) + 56;
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['top']}>
-      <View style={styles.hdr}><Text style={styles.hdrTitle}>Reports</Text></View>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: 14 }}>
+    <View style={{ flex: 1, backgroundColor: colors.bgCanvas }}>
+      <GreenHeader title="Reports" centered />
+      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: scrollPadBottom, gap: 14 }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
           <Chip label="All" active={selectedUnit === 'all'} onPress={() => setSelectedUnit('all')} />
           {units.map(u => (
@@ -150,7 +154,7 @@ export default function Reports() {
           </Card>
         ))}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -198,7 +202,5 @@ function Donut({ percent }: { percent: number }) {
 }
 
 const styles = StyleSheet.create({
-  hdr: { backgroundColor: colors.green, padding: spacing.lg },
-  hdrTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
 });

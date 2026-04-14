@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Body, Button, Card } from '../../../src/components/UI';
 import { TopBar } from '../../../src/components/TopBar';
@@ -16,20 +16,40 @@ export default function StudentDetail() {
   const [currentRec, setCurrentRec] = useState<AttendanceRecord | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [working, setWorking] = useState<'present' | 'absent' | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
+    setLoading(true);
+    setLoadError(null);
     try {
       const u = await repo.getUserById(String(id));
-      setUser(u ?? null);
+      if (!u) {
+        setUser(null);
+        setAllRecords([]);
+        setCurrentRec(null);
+        setSession(null);
+        setLoadError('Student not found.');
+        return;
+      }
+      setUser(u);
       const all = await repo.getAttendanceForStudent(String(id));
       setAllRecords(all);
       if (sid) {
         setCurrentRec(all.find(r => r.sessionId === sid) ?? null);
         const sessions = await repo.getSessions();
         setSession(sessions.find(s => s.id === sid) ?? null);
+      } else {
+        setCurrentRec(null);
+        setSession(null);
       }
-    } catch {}
+    } catch (e: any) {
+      setLoadError(e?.message ?? 'Could not load student.');
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   }, [id, sid]);
 
   useEffect(() => { load(); }, [load]);
@@ -56,19 +76,44 @@ export default function StudentDetail() {
     }
   };
 
-  if (!user) return null;
+  if (loading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['bottom']}>
+        <TopBar title="Student" tone="green" back />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+          <ActivityIndicator size="large" color={colors.green} />
+          <Body muted>Loading…</Body>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError || !user) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['bottom']}>
+        <TopBar title="Student" tone="green" back />
+        <View style={{ flex: 1, padding: spacing.lg, justifyContent: 'center', gap: 16 }}>
+          <Text style={{ color: colors.red, fontWeight: '700', textAlign: 'center' }}>
+            {loadError ?? 'Student not found.'}
+          </Text>
+          <Button title="Retry" variant="secondary" onPress={load} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const total = allRecords.length || 1;
   const present = allRecords.filter(r => r.status !== 'absent').length;
   const pct = Math.round((present / total) * 100);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={['bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgCanvas }} edges={['bottom']}>
       <TopBar title={user.name} tone="green" back />
       <View style={{ padding: spacing.lg, gap: 12 }}>
         <View style={{ alignItems: 'center', marginBottom: 8 }}>
           <View style={styles.avatar}><Text style={{ fontSize: 26, fontWeight: '800', color: colors.green }}>{user.name[0]}</Text></View>
           <Text style={{ fontSize: 18, fontWeight: '700', marginTop: 8 }}>{user.name}</Text>
-          <Body muted>{user.id} • {user.programme}</Body>
+          <Body muted>{user.id} • {user.programme ?? user.department ?? '—'}</Body>
         </View>
 
         <Card style={{ backgroundColor: currentRec ? colors.greenLight : colors.redLight, borderColor: 'transparent' }}>
