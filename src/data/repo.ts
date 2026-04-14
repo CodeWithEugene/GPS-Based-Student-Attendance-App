@@ -122,7 +122,8 @@ export const repo = {
     return (data as DbCourse[] | null)?.map(toCourse) ?? [];
   },
 
-  async updateStudentCourse(userId: string, courseId: string, courseName: string): Promise<void> {
+  /** Set degree programme (students + lecturers). Updates profiles.course_id and programme label. */
+  async updateUserCourse(userId: string, courseId: string, courseName: string): Promise<void> {
     const { error } = await supabase
       .from('profiles')
       .update({ course_id: courseId, programme: courseName })

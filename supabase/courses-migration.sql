@@ -52,7 +52,9 @@ where role = 'student' and course_id is null and lower(trim(programme)) in ('bsc
 update profiles set course_id = 'CRS02', programme = (select name from courses where id = 'CRS02')
 where role = 'student' and course_id is null and lower(trim(programme)) like '%bsc it%';
 
--- Any student still without course_id must pick their degree in the app (mandatory modal).
+-- Any student still without course_id must pick their degree in the app (mandatory gate).
+-- Optional: require every student to pick in-app (clears auto-linked rows from above):
+--   update profiles set course_id = null, programme = null where role = 'student';
 
 update units set course_id = 'CRS01' where course_id is null;
 

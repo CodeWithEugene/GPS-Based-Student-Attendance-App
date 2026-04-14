@@ -3,6 +3,7 @@ import { Redirect, Tabs } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CourseSelectionGate } from '../../src/components/CourseSelectionGate';
 import { colors } from '../../src/theme';
 import { repo } from '../../src/data/repo';
 import { useAuth } from '../../src/store';
@@ -50,6 +51,7 @@ export default function LecturerTabs() {
   if (user.role !== 'lecturer') return <Redirect href="/(student)/dashboard" />;
 
   return (
+    <CourseSelectionGate variant="lecturer">
     <Tabs
       screenOptions={({ route }) => ({
         headerShown: false,
@@ -90,5 +92,6 @@ export default function LecturerTabs() {
       <Tabs.Screen name="student/[id]" options={{ href: null }} />
       <Tabs.Screen name="report/[id]" options={{ href: null }} />
     </Tabs>
+    </CourseSelectionGate>
   );
 }

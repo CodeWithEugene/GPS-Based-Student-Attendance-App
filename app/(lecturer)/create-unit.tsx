@@ -37,6 +37,10 @@ export default function CreateUnit() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (user?.courseId) setCourseId(user.courseId);
+  }, [user?.courseId]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return courses;
