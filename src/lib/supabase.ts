@@ -55,3 +55,18 @@ export const supabase = createClient(clientUrl, clientKey, {
     detectSessionInUrl: false,
   },
 });
+
+/**
+ * User id for database writes. Refreshes the session first so the access token matches auth.users,
+ * then falls back to the stored session. Avoids auth.getUser(), which hits the Auth API and often
+ * surfaces "User from sub claim in JWT does not exist" for recoverable stale tokens.
+ */
+export async function getSessionUserIdForWrite(): Promise<string> {
+  const { data: refreshed, error: refErr } = await supabase.auth.refreshSession();
+  if (!refErr && refreshed.session?.user?.id) {
+    return refreshed.session.user.id;
+  }
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user?.id) return session.user.id;
+  throw new Error(refErr?.message ?? 'Not signed in. Please sign out and sign in again.');
+}

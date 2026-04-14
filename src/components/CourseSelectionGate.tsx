@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -9,21 +10,23 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Body } from './UI';
+import { Body, Caption } from './UI';
+import { GreenHeader } from './GreenHeader';
 import { repo } from '../data/repo';
 import type { Course } from '../data/types';
-import { colors, radius, spacing } from '../theme';
+import { formatAuthErrorForDisplay } from '../lib/auth-errors';
+import { colors, radius, shadows, spacing } from '../theme';
 import { useAuth } from '../store';
 
 const COPY = {
   student: {
-    title: 'Select your degree course',
-    sub: 'Required once. You will only see classes and attendance for your programme.',
+    title: 'Pick your degree',
+    sub: 'One-time setup. We use this to show only your programme\'s classes.',
     searchPh: 'Search e.g. Computer, Civil…',
   },
   lecturer: {
-    title: 'Select your programme',
-    sub: 'Choose the degree programme you teach. Live rosters and defaults use students in this programme.',
+    title: 'Choose a programme',
+    sub: 'Which programme do you teach? Live rosters use students in this programme.',
     searchPh: 'Search e.g. Computer, Civil…',
   },
 } as const;
@@ -31,7 +34,8 @@ const COPY = {
 type Variant = keyof typeof COPY;
 
 /**
- * Blocks the app until profiles.course_id is set (full screen — avoids Modal stacking issues on Android).
+ * Blocks the app until the user picks a degree programme (students) or a teaching programme (lecturers).
+ * Lecturers may be allowed to skip (optional course link); students must select.
  */
 export function CourseSelectionGate({ variant, children }: { variant: Variant; children: React.ReactNode }) {
   const { user, signIn } = useAuth();
@@ -41,11 +45,9 @@ export function CourseSelectionGate({ variant, children }: { variant: Variant; c
   const [listLoading, setListLoading] = useState(true);
   const [err, setErr] = useState('');
 
-  const roleOk =
-    variant === 'student' ? user?.role === 'student' : user?.role === 'lecturer';
+  const roleOk = variant === 'student' ? user?.role === 'student' : user?.role === 'lecturer';
   const needsCourse = Boolean(user && roleOk && !user.courseId);
 
-  /** If DB was updated elsewhere (or after migration), pick up course_id without forcing a false gate. */
   useEffect(() => {
     if (!user?.id || user.courseId) return;
     let cancelled = false;
@@ -54,13 +56,9 @@ export function CourseSelectionGate({ variant, children }: { variant: Variant; c
         const fresh = await repo.fetchProfileById(user.id);
         if (cancelled || !fresh?.courseId) return;
         await signIn(fresh);
-      } catch {
-        /* ignore */
-      }
+      } catch {}
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [user?.id, user?.courseId, signIn]);
 
   const loadCourses = useCallback(async () => {
@@ -93,7 +91,7 @@ export function CourseSelectionGate({ variant, children }: { variant: Variant; c
       const next = await repo.fetchProfileById(user.id);
       if (next) await signIn(next);
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : 'Could not save. Try again.');
+      setErr(formatAuthErrorForDisplay(e));
     } finally {
       setLoading(false);
     }
@@ -104,22 +102,34 @@ export function CourseSelectionGate({ variant, children }: { variant: Variant; c
   const t = COPY[variant];
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      <View style={styles.sheet}>
+    <SafeAreaView style={styles.root} edges={['bottom']}>
+      <GreenHeader title={t.title} centered compact />
+      <View style={styles.body}>
+        <View style={styles.heroIcon}>
+          <Ionicons name="school" size={36} color={colors.green} />
+        </View>
         <Text style={styles.title}>{t.title}</Text>
-        <Body muted style={styles.sub}>
-          {t.sub}
-        </Body>
-        <TextInput
-          placeholder={t.searchPh}
-          placeholderTextColor={colors.textMuted}
-          value={query}
-          onChangeText={setQuery}
-          style={styles.search}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
+        <Body muted style={styles.sub}>{t.sub}</Body>
+
+        <View style={[styles.searchWrap, shadows.xs]}>
+          <Ionicons name="search" size={18} color={colors.textSubtle} />
+          <TextInput
+            placeholder={t.searchPh}
+            placeholderTextColor={colors.textSubtle}
+            value={query}
+            onChangeText={setQuery}
+            style={styles.search}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
+
         {err ? <Text style={styles.err}>{err}</Text> : null}
+
+        <Caption style={{ marginTop: spacing.md, marginBottom: spacing.xs }}>
+          PROGRAMMES
+        </Caption>
+
         {listLoading ? (
           <ActivityIndicator style={{ marginVertical: 24 }} color={colors.green} />
         ) : (
@@ -127,14 +137,23 @@ export function CourseSelectionGate({ variant, children }: { variant: Variant; c
             data={filtered}
             keyExtractor={item => item.id}
             style={styles.list}
+            contentContainerStyle={{ paddingBottom: spacing.xl, gap: 8 }}
             keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
               <Pressable
                 onPress={() => onSelect(item)}
                 disabled={loading}
-                style={({ pressed }) => [styles.row, (pressed || loading) && { opacity: 0.75 }]}
+                style={({ pressed }) => [
+                  styles.row,
+                  shadows.xs,
+                  (pressed || loading) && { opacity: 0.75, transform: [{ scale: 0.99 }] },
+                ]}
               >
+                <View style={styles.rowIcon}>
+                  <Ionicons name="ribbon" size={18} color={colors.green} />
+                </View>
                 <Text style={styles.rowText}>{item.name}</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
               </Pressable>
             )}
             ListEmptyComponent={
@@ -145,7 +164,7 @@ export function CourseSelectionGate({ variant, children }: { variant: Variant; c
           />
         )}
         {loading ? (
-          <Text style={{ textAlign: 'center', color: colors.textMuted, marginTop: 8 }}>Saving…</Text>
+          <Text style={{ textAlign: 'center', color: colors.textMuted, marginTop: 8, fontWeight: '600' }}>Saving…</Text>
         ) : null}
       </View>
     </SafeAreaView>
@@ -153,29 +172,28 @@ export function CourseSelectionGate({ variant, children }: { variant: Variant; c
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bgCanvas, padding: spacing.lg },
-  sheet: { flex: 1 },
-  title: { fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  sub: { textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.md, lineHeight: 20 },
-  search: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: colors.text,
-    marginBottom: spacing.sm,
-    backgroundColor: colors.white,
+  root: { flex: 1, backgroundColor: colors.bgCanvas },
+  body: { flex: 1, padding: spacing.lg },
+  heroIcon: {
+    width: 64, height: 64, borderRadius: 32, backgroundColor: colors.greenLight,
+    alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginTop: spacing.md,
   },
+  title: { fontSize: 22, fontWeight: '800', color: colors.text, textAlign: 'center', marginTop: spacing.md, letterSpacing: -0.2 },
+  sub: { textAlign: 'center', marginTop: spacing.xs, marginBottom: spacing.lg, lineHeight: 20, paddingHorizontal: spacing.md },
+  searchWrap: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    borderRadius: radius.md, paddingHorizontal: spacing.md,
+    backgroundColor: colors.white, height: 50,
+  },
+  search: { flex: 1, fontSize: 15, color: colors.text, fontWeight: '500' },
   list: { flex: 1 },
   row: {
-    paddingVertical: 14,
-    paddingHorizontal: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    padding: spacing.md,
     backgroundColor: colors.white,
+    borderRadius: radius.md,
   },
-  rowText: { fontSize: 16, fontWeight: '600', color: colors.text },
-  err: { color: colors.red, textAlign: 'center', marginBottom: 8, fontSize: 13 },
+  rowIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.greenLight, alignItems: 'center', justifyContent: 'center' },
+  rowText: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.text },
+  err: { color: colors.red, textAlign: 'center', marginTop: 8, fontSize: 13, fontWeight: '600' },
 });

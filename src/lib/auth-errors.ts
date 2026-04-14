@@ -53,6 +53,13 @@ export function formatAuthErrorForDisplay(err: unknown): string {
     return 'Sign-in failed. Please try again in a moment.';
   }
 
+  if (lower.includes('sub claim') && lower.includes('does not exist')) {
+    return (
+      'Your saved login is out of sync with the server (for example after a project reset or if your auth user was removed). ' +
+      'Sign out from Profile, then sign in again.'
+    );
+  }
+
   if (!raw) return 'Something went wrong. Please try again.';
   return raw.length > 400 ? `${raw.slice(0, 400)}…` : raw;
 }

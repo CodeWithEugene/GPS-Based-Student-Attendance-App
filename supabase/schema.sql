@@ -83,7 +83,22 @@ create policy "profiles: read auth" on profiles for select to authenticated usin
 create policy "profiles: read anon for login lookup"
   on profiles for select to anon using (true);
 create policy "profiles: upsert own" on profiles for insert to authenticated with check (auth_user_id = auth.uid());
-create policy "profiles: update own" on profiles for update to authenticated using (auth_user_id = auth.uid());
+-- Allow updates when already linked, or when claiming an unlinked row (email must match JWT).
+drop policy if exists "profiles: update own" on profiles;
+create policy "profiles: update own" on profiles
+  for update
+  to authenticated
+  using (
+    auth_user_id = auth.uid()
+    or (
+      auth_user_id is null
+      and lower(trim(email)) = lower(trim(coalesce(
+        nullif(btrim(auth.jwt() ->> 'email'), ''),
+        nullif(btrim(auth.jwt() #>> '{user_metadata,email}'), '')
+      )))
+    )
+  )
+  with check (auth_user_id = auth.uid());
 
 -- Units readable by all authenticated users
 create policy "units: read" on units for select to authenticated using (true);

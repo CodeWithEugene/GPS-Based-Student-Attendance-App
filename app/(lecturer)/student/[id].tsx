@@ -7,10 +7,12 @@ import { TopBar } from '../../../src/components/TopBar';
 import { colors, spacing } from '../../../src/theme';
 import { repo } from '../../../src/data/repo';
 import { AttendanceRecord, Session, User } from '../../../src/data/types';
+import { useAuth } from '../../../src/store';
 
 export default function StudentDetail() {
   const router = useRouter();
   const { id, sid } = useLocalSearchParams<{ id: string; sid?: string }>();
+  const { user: authUser } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [allRecords, setAllRecords] = useState<AttendanceRecord[]>([]);
   const [currentRec, setCurrentRec] = useState<AttendanceRecord | null>(null);
@@ -56,6 +58,10 @@ export default function StudentDetail() {
 
   const override = async (status: 'present' | 'absent') => {
     if (!user || !session) return;
+    if (!authUser || authUser.role !== 'lecturer' || authUser.id !== session.lecturerId) {
+      Alert.alert('Not allowed', 'Only the lecturer who started this session can override attendance.');
+      return;
+    }
     setWorking(status);
     try {
       await repo.overrideAttendance({

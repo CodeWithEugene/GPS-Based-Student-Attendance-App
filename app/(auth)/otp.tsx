@@ -74,7 +74,8 @@ export default function OtpEntry() {
         return;
       }
 
-      const profile = await ensureProfileForSession(String(email), data.user.id);
+      const sessionEmail = (data.user.email ?? email).trim().toLowerCase();
+      const profile = await ensureProfileForSession(sessionEmail, data.user.id);
       await signIn(profile);
       await markPermissionOnboardingComplete();
       router.replace(profile.role === 'lecturer' ? '/(lecturer)/dashboard' : '/(student)/dashboard');

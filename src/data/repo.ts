@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '../lib/supabase';
+import { getSessionUserIdForWrite, supabase } from '../lib/supabase';
 import { AttendanceRecord, ClassUnit, Course, Session, User } from './types';
 
 const CURRENT_USER = 'ae.currentUser';
@@ -51,7 +51,7 @@ const toUnit = (u: DbUnit): ClassUnit => ({
   id: u.id, code: u.code, name: u.name, room: u.room,
   lecturerId: u.lecturer_id, lecturerName: u.lecturer_name,
   schedule: u.schedule, enrolledStudentIds: u.enrolled_student_ids, geofence: u.geofence,
-  courseId: u.course_id ?? 'CRS01',
+  courseId: u.course_id ?? '',
 });
 const fromClassUnitRow = (u: ClassUnit) => ({
   id: u.id,
@@ -106,6 +106,15 @@ export const repo = {
     const u = await this.getUserById(id);
     return u ?? null;
   },
+  async getProfileByAuthUserId(authUserId: string): Promise<User | null> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id,email,name,role,programme,department,course_id')
+      .eq('auth_user_id', authUserId)
+      .maybeSingle();
+    if (error) return null;
+    return data ? toUser(data as DbProfile) : null;
+  },
   async getUsers(): Promise<User[]> {
     const { data } = await supabase
       .from('profiles')
@@ -122,13 +131,32 @@ export const repo = {
     return (data as DbCourse[] | null)?.map(toCourse) ?? [];
   },
 
-  /** Set degree programme (students + lecturers). Updates profiles.course_id and programme label. */
+  /**
+   * Set degree programme (students + lecturers). Also claims auth_user_id when still null
+   * (same request satisfies RLS with check auth_user_id = auth.uid()).
+   */
   async updateUserCourse(userId: string, courseId: string, courseName: string): Promise<void> {
-    const { error } = await supabase
+    const uid = await getSessionUserIdForWrite();
+
+    const patch = { course_id: courseId, programme: courseName, auth_user_id: uid };
+    const { data, error } = await supabase
       .from('profiles')
-      .update({ course_id: courseId, programme: courseName })
-      .eq('id', userId);
-    if (error) throw error;
+      .update(patch)
+      .eq('id', userId)
+      .or(`auth_user_id.is.null,auth_user_id.eq.${uid}`)
+      .select('id')
+      .maybeSingle();
+
+    if (error) {
+      const d = (error as { details?: string; hint?: string }).details;
+      const h = (error as { hint?: string }).hint;
+      throw new Error([error.message, d, h].filter(Boolean).join('. ') || 'Could not save your course.');
+    }
+    if (!data) {
+      throw new Error(
+        'Could not save your course. Sign out and sign in again, or ask an admin to link your profile email in the database.',
+      );
+    }
   },
 
   async getStudentsForCourse(courseId: string): Promise<User[]> {

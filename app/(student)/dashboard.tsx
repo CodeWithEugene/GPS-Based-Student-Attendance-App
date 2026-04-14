@@ -5,7 +5,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'rea
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GreenHeader } from '../../src/components/GreenHeader';
 import { Body, Card, Pill } from '../../src/components/UI';
-import { colors, radius, spacing } from '../../src/theme';
+import { colors, radius, shadows, spacing } from '../../src/theme';
 import { repo } from '../../src/data/repo';
 import { AttendanceRecord, ClassUnit, Session } from '../../src/data/types';
 import { useAuth } from '../../src/store';
@@ -44,71 +44,93 @@ export default function StudentDashboard() {
 
   const statusOf = (u: ClassUnit): { label: string; tone: any } => {
     const live = sessions.find(s => s.unitId === u.id && s.status === 'live');
-    if (live) return { label: 'In Progress', tone: 'success' };
+    if (live) return { label: 'Live now', tone: 'success' };
     const ended = sessions.find(s => s.unitId === u.id && s.status === 'ended');
     if (ended) return { label: 'Ended', tone: 'danger' };
     return { label: 'Upcoming', tone: 'neutral' };
   };
 
   if (!user) return null;
-
   const listPadBottom = spacing.lg + Math.max(insets.bottom, 12) + 56;
-
-  if (units.length === 0) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.bgCanvas }}>
-        <Header greeting={greeting} name={user.name.split(' ')[0]} />
-        <EmptyState onView={() => router.push('/(student)/history')} />
-      </View>
-    );
-  }
+  const firstName = user.name.split(' ')[0];
+  const riskTone = pct >= 75 ? colors.green : pct >= 50 ? colors.gold : colors.red;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bgCanvas }}>
-      <Header greeting={greeting} name={user.name.split(' ')[0]} />
+      <GreenHeader>
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.greeting}>{greeting},</Text>
+            <Text style={styles.name}>{firstName} 👋</Text>
+            <Text style={styles.role}>Student · {user.programme ?? 'JKUAT'}</Text>
+          </View>
+          <Pressable
+            hitSlop={8}
+            onPress={() => router.push('/(student)/profile')}
+            style={styles.avatar}
+          >
+            <Text style={{ color: colors.white, fontWeight: '800' }}>{firstName[0]}</Text>
+            <View style={styles.dot} />
+          </Pressable>
+        </View>
+      </GreenHeader>
+
       <FlatList
         data={units}
         keyExtractor={u => u.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={colors.green} />}
-        contentContainerStyle={{ padding: spacing.lg, paddingBottom: listPadBottom, gap: spacing.md }}
+        contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: listPadBottom, gap: spacing.md }}
         ListHeaderComponent={
-          <Card style={{ backgroundColor: colors.greenLight, borderColor: colors.greenLight }}>
-            <Text style={{ color: colors.green, fontWeight: '700' }}>Attendance this semester</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
-              <Text style={{ fontSize: 36, fontWeight: '800', color: colors.green }}>{pct}%</Text>
-              <Text style={{ color: colors.textMuted }}>{records.length} sessions logged</Text>
+          <View style={styles.heroStat}>
+            <View style={[styles.statCard, shadows.md]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.statLabel}>ATTENDANCE RATE</Text>
+                  <Text style={[styles.statValue, { color: riskTone }]}>{pct}%</Text>
+                  <Text style={styles.statSub}>{records.length} session{records.length === 1 ? '' : 's'} logged this term</Text>
+                </View>
+                <View style={[styles.ringOuter, { backgroundColor: `${riskTone}15` }]}>
+                  <View style={[styles.ringInner, { borderColor: riskTone }]}>
+                    <Ionicons name="checkmark" size={24} color={riskTone} />
+                  </View>
+                </View>
+              </View>
+              <View style={styles.progress}>
+                <View style={[styles.progressFill, { width: `${pct}%`, backgroundColor: riskTone }]} />
+              </View>
             </View>
-            <View style={styles.bar}>
-              <View style={[styles.fill, { width: `${pct}%`, backgroundColor: pct >= 75 ? colors.green : pct >= 50 ? colors.gold : colors.red }]} />
-            </View>
-          </Card>
+            <Text style={styles.sectionLabel}>TODAY'S CLASSES</Text>
+          </View>
         }
-        ListHeaderComponentStyle={{ marginBottom: 6 }}
+        ListEmptyComponent={<EmptyState onView={() => router.push('/(student)/history')} />}
         renderItem={({ item }) => {
           const st = statusOf(item);
           const live = sessions.find(s => s.unitId === item.id && s.status === 'live');
           return (
             <Pressable
-              onPress={() => live
-                ? router.push({ pathname: '/(student)/notification', params: { sessionId: live.id } })
-                : null
-              }
+              onPress={() => live && router.push({ pathname: '/(student)/notification', params: { sessionId: live.id } })}
             >
-              <Card>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Card style={{ padding: spacing.lg }}>
+                <View style={styles.classTop}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: '700', fontSize: 16, color: colors.text }}>{item.name}</Text>
-                    <Body muted style={{ marginTop: 2 }}>{item.code} • {item.room}</Body>
-                    <Body muted>{item.schedule.start} – {item.schedule.end} • {item.lecturerName}</Body>
+                    <Text style={styles.className}>{item.name}</Text>
+                    <Body muted style={{ marginTop: 2 }}>{item.code} · {item.room}</Body>
+                    <Body muted style={{ fontSize: 13 }}>{item.schedule.start}–{item.schedule.end} · {item.lecturerName}</Body>
                   </View>
                   <Pill label={st.label} tone={st.tone} />
                 </View>
                 {live && (
                   <Pressable
                     onPress={() => router.push({ pathname: '/(student)/sign', params: { sessionId: live.id } })}
-                    style={{ marginTop: 12, backgroundColor: colors.red, padding: 12, borderRadius: radius.md, alignItems: 'center' }}
+                    style={({ pressed }) => [
+                      styles.cta,
+                      shadows.button,
+                      { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+                    ]}
                   >
-                    <Text style={{ color: '#fff', fontWeight: '700' }}>Go Sign Attendance</Text>
+                    <Ionicons name="location" size={18} color="#fff" />
+                    <Text style={styles.ctaText}>Sign attendance now</Text>
+                    <Ionicons name="arrow-forward" size={18} color="#fff" />
                   </Pressable>
                 )}
               </Card>
@@ -120,44 +142,15 @@ export default function StudentDashboard() {
   );
 }
 
-function Header({ greeting, name }: { greeting: string; name: string }) {
-  return (
-    <GreenHeader>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' }}>{greeting},</Text>
-          <Text style={{ color: colors.white, fontSize: 22, fontWeight: '800', marginTop: 2 }}>{name}</Text>
-        </View>
-        <View style={{ position: 'relative' }}>
-          <Ionicons name="notifications-outline" size={26} color={colors.white} />
-          <View
-            style={{
-              position: 'absolute',
-              top: -2,
-              right: -2,
-              width: 9,
-              height: 9,
-              borderRadius: 5,
-              backgroundColor: colors.red,
-              borderWidth: 2,
-              borderColor: colors.green,
-            }}
-          />
-        </View>
-      </View>
-    </GreenHeader>
-  );
-}
-
 function EmptyState({ onView }: { onView: () => void }) {
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl }}>
-      <View style={{ width: 140, height: 140, borderRadius: 70, backgroundColor: colors.greenLight, alignItems: 'center', justifyContent: 'center' }}>
-        <Ionicons name="calendar-outline" size={72} color={colors.green} />
+    <View style={{ alignItems: 'center', padding: spacing.xl, paddingTop: spacing.xxxl }}>
+      <View style={styles.emptyIcon}>
+        <Ionicons name="calendar-outline" size={56} color={colors.green} />
       </View>
-      <Text style={{ fontSize: 20, fontWeight: '800', marginTop: 16 }}>No classes today</Text>
-      <Text style={{ color: colors.textMuted, marginTop: 4 }}>Enjoy your free time!</Text>
-      <Pressable onPress={onView} style={{ marginTop: 20, padding: 14, borderWidth: 1.5, borderColor: colors.green, borderRadius: 10 }}>
+      <Text style={styles.emptyTitle}>No classes today</Text>
+      <Body muted style={{ marginTop: 4 }}>Enjoy your free time!</Body>
+      <Pressable onPress={onView} style={styles.emptyBtn}>
         <Text style={{ color: colors.green, fontWeight: '700' }}>View full timetable</Text>
       </Pressable>
     </View>
@@ -165,6 +158,41 @@ function EmptyState({ onView }: { onView: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  bar: { height: 8, backgroundColor: '#fff', borderRadius: 4, overflow: 'hidden', marginTop: 10 },
-  fill: { height: 8, borderRadius: 4 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  greeting: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' },
+  name: { color: colors.white, fontSize: 24, fontWeight: '800', marginTop: 2, letterSpacing: -0.2 },
+  role: { color: 'rgba(255,255,255,0.78)', fontSize: 12, fontWeight: '600', marginTop: 4 },
+  avatar: {
+    width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.22)',
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  dot: { position: 'absolute', top: -2, right: -2, width: 11, height: 11, borderRadius: 6, backgroundColor: colors.gold, borderWidth: 2, borderColor: colors.green },
+  heroStat: { marginTop: -spacing.xl, gap: spacing.lg, paddingTop: 0 },
+  statCard: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+  },
+  statLabel: { fontSize: 11, fontWeight: '800', color: colors.textMuted, letterSpacing: 0.8 },
+  statValue: { fontSize: 40, fontWeight: '800', marginTop: spacing.xs, letterSpacing: -1 },
+  statSub: { fontSize: 13, color: colors.textMuted, marginTop: 2, fontWeight: '500' },
+  ringOuter: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
+  ringInner: { width: 56, height: 56, borderRadius: 28, borderWidth: 3, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white },
+  progress: { height: 8, backgroundColor: colors.bgSubtle, borderRadius: radius.pill, marginTop: spacing.md, overflow: 'hidden' },
+  progressFill: { height: 8, borderRadius: radius.pill },
+  sectionLabel: { fontSize: 11, fontWeight: '800', color: colors.textMuted, letterSpacing: 0.8, marginTop: spacing.sm, marginLeft: 4 },
+  classTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  className: { fontSize: 16, fontWeight: '800', color: colors.text, letterSpacing: -0.1 },
+  cta: {
+    marginTop: spacing.md,
+    backgroundColor: colors.red,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 14,
+    borderRadius: radius.md,
+  },
+  ctaText: { color: '#fff', fontWeight: '800', fontSize: 15, letterSpacing: 0.2 },
+  emptyIcon: { width: 120, height: 120, borderRadius: 60, backgroundColor: colors.greenLight, alignItems: 'center', justifyContent: 'center' },
+  emptyTitle: { fontSize: 20, fontWeight: '800', marginTop: spacing.lg },
+  emptyBtn: { marginTop: spacing.lg, paddingVertical: 12, paddingHorizontal: spacing.lg, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.green },
 });

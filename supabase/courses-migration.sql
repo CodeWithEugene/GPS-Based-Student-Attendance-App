@@ -79,3 +79,23 @@ create policy "attendance: student insert own"
         and p.course_id = u.course_id
     )
   );
+
+-- ---------------------------------------------------------------------------
+-- Profiles: allow linking auth_user_id + updates for rows still unclaimed (seed / legacy).
+-- Same as supabase/fix-profiles-rls-link-and-update.sql — safe to re-run.
+-- ---------------------------------------------------------------------------
+drop policy if exists "profiles: update own" on profiles;
+create policy "profiles: update own" on profiles
+  for update
+  to authenticated
+  using (
+    auth_user_id = auth.uid()
+    or (
+      auth_user_id is null
+      and lower(trim(email)) = lower(trim(coalesce(
+        nullif(btrim(auth.jwt() ->> 'email'), ''),
+        nullif(btrim(auth.jwt() #>> '{user_metadata,email}'), '')
+      )))
+    )
+  )
+  with check (auth_user_id = auth.uid());

@@ -81,23 +81,28 @@ export async function ensureProfileForSession(email: string, authUserId: string)
     .maybeSingle();
 
   if (existing) {
-    // Link this auth user to the profile
-    await supabase.from('profiles').update({ auth_user_id: authUserId }).eq('id', existing.id);
-    if (normEmail === LECTURER_GMAIL_EXCEPTION && existing.role !== 'lecturer') {
-      const { data: upgraded } = await supabase
-        .from('profiles')
-        .update({
-          role: 'lecturer',
-          department: existing.department ?? 'Computing',
-          programme: null,
-        })
-        .eq('id', existing.id)
-        .select('id,email,name,role,programme,department,course_id')
-        .single();
-      if (upgraded) existing = upgraded as typeof existing;
+    const { error: linkErr } = await supabase
+      .from('profiles')
+      .update({ auth_user_id: authUserId })
+      .eq('id', existing.id)
+      .or(`auth_user_id.is.null,auth_user_id.eq.${authUserId}`);
+    if (linkErr) {
+      throw new Error(
+        linkErr.message ||
+          'Could not link your account to your profile. Run fix-profiles-rls-link-and-update.sql in Supabase (see supabase/).',
+      );
+    }
+    const { data: relinked } = await supabase
+      .from('profiles')
+      .select('id,email,name,role,programme,department,course_id,auth_user_id')
+      .eq('id', existing.id)
+      .maybeSingle();
+    if (relinked && (relinked as { auth_user_id?: string }).auth_user_id !== authUserId) {
+      throw new Error(
+        'Account link did not complete. In Supabase SQL Editor, run supabase/fix-profiles-rls-link-and-update.sql then try again.',
+      );
     }
   } else {
-    // 2. Auto-create a profile from the email domain
     const role = roleFromEmail(normEmail);
     const name = nameFromEmail(normEmail);
     const id = genId(role);
@@ -115,11 +120,50 @@ export async function ensureProfileForSession(email: string, authUserId: string)
       })
       .select('id,email,name,role,programme,department,course_id')
       .single();
-    if (error) throw error;
-    existing = created;
+    if (error) {
+      const code = (error as { code?: string }).code;
+      if (code === '23505') {
+        const { data: raced } = await supabase
+          .from('profiles')
+          .select('id,email,name,role,programme,department,course_id')
+          .ilike('email', normEmail)
+          .maybeSingle();
+        if (raced) {
+          existing = raced;
+          const { error: linkErr2 } = await supabase
+            .from('profiles')
+            .update({ auth_user_id: authUserId })
+            .eq('id', existing.id)
+            .or(`auth_user_id.is.null,auth_user_id.eq.${authUserId}`);
+          if (linkErr2) throw linkErr2;
+        } else {
+          throw error;
+        }
+      } else {
+        throw error;
+      }
+    } else {
+      existing = created;
+    }
   }
 
-  const row = existing!;
+  let row = existing!;
+
+  if (normEmail === LECTURER_GMAIL_EXCEPTION && row.role !== 'lecturer') {
+    const { data: upgraded, error: upErr } = await supabase
+      .from('profiles')
+      .update({
+        role: 'lecturer',
+        department: row.department ?? 'Computing',
+        programme: row.programme,
+      })
+      .eq('id', row.id)
+      .select('id,email,name,role,programme,department,course_id')
+      .single();
+    if (upErr) throw new Error(upErr.message || 'Could not set lecturer role for this account.');
+    if (upgraded) row = upgraded as typeof row;
+  }
+
   return {
     id: row.id,
     email: row.email,
