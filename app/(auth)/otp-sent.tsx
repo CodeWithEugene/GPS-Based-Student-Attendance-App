@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Body, Button } from '../../src/components/UI';
 import { colors, spacing } from '../../src/theme';
+import { supabase } from '../../src/lib/supabase';
 
 function mask(email: string) {
   const [u, d] = email.split('@');
@@ -21,6 +22,8 @@ export default function OtpSent() {
   const router = useRouter();
   const { email } = useLocalSearchParams<{ email: string }>();
   const [left, setLeft] = useState(600);
+  const [resending, setResending] = useState(false);
+  const [resendErr, setResendErr] = useState('');
 
   useEffect(() => {
     const t = setInterval(() => setLeft(n => Math.max(0, n - 1)), 1000);
@@ -54,8 +57,28 @@ export default function OtpSent() {
         <Pressable onPress={() => router.replace({ pathname: '/(auth)/otp', params: { email } })}>
           <Text style={{ color: colors.green, fontWeight: '600', marginTop: 6 }}>I have the code — Enter it</Text>
         </Pressable>
-        <Pressable onPress={() => setLeft(600)}>
-          <Text style={{ color: colors.textMuted, marginTop: 8 }}>Resend Code</Text>
+        {resendErr ? <Text style={{ color: colors.red, fontSize: 13, textAlign: 'center' }}>{resendErr}</Text> : null}
+        <Pressable
+          disabled={resending}
+          onPress={async () => {
+            if (!email) return;
+            setResendErr('');
+            setResending(true);
+            setLeft(600);
+            try {
+              const { error } = await supabase.auth.signInWithOtp({
+                email: String(email),
+                options: { shouldCreateUser: true },
+              });
+              if (error) setResendErr(error.message);
+            } finally {
+              setResending(false);
+            }
+          }}
+        >
+          <Text style={{ color: colors.textMuted, marginTop: 8, textAlign: 'center' }}>
+            {resending ? 'Sending…' : 'Resend code'}
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>

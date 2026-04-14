@@ -1,6 +1,6 @@
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
-import { supabase } from './supabase';
+import { getSupabaseConfigError, supabase } from './supabase';
 import { repo } from '../data/repo';
 import { User } from '../data/types';
 import { ensureProfileForSession, isJkuatEmail } from './auth-helpers';
@@ -20,13 +20,21 @@ export async function signInWithGoogle(): Promise<
   | { ok: true; user: User }
   | { ok: false; error: string }
 > {
+  const configError = getSupabaseConfigError();
+  if (configError) return { ok: false, error: configError };
+
   const redirectTo = Linking.createURL('auth-callback');
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo, skipBrowserRedirect: true },
   });
-  if (error || !data?.url) return { ok: false, error: error?.message ?? 'Could not start Google sign-in.' };
+  if (error || !data?.url) {
+    return {
+      ok: false,
+      error: error?.message ?? 'Could not start Google sign-in. Check Supabase OAuth redirect settings.',
+    };
+  }
 
   const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
   if (result.type !== 'success' || !result.url) {

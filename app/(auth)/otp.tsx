@@ -25,6 +25,11 @@ export default function OtpEntry() {
     return () => clearInterval(t);
   }, []);
 
+  useEffect(() => {
+    const id = requestAnimationFrame(() => refs.current[0]?.focus());
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   const onChange = (i: number, v: string) => {
     const c = v.replace(/\D/g, '').slice(-1);
     const next = [...digits];
@@ -68,7 +73,11 @@ export default function OtpEntry() {
     if (!email) return;
     setErr('');
     setLeft(600);
-    await supabase.auth.signInWithOtp({ email: String(email) });
+    const { error } = await supabase.auth.signInWithOtp({
+      email: String(email),
+      options: { shouldCreateUser: true },
+    });
+    if (error) setErr(error.message);
   };
 
   return (

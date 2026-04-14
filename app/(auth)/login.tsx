@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Body, Button, Input } from '../../src/components/UI';
 import { GoogleIcon } from '../../src/components/GoogleIcon';
 import { colors, spacing } from '../../src/theme';
-import { supabase } from '../../src/lib/supabase';
+import { getSupabaseConfigError, supabase } from '../../src/lib/supabase';
 import { isJkuatEmail } from '../../src/lib/auth-helpers';
 import { signInWithGoogle } from '../../src/lib/google-auth';
 
@@ -19,6 +19,8 @@ export default function Login() {
   const onContinue = async () => {
     Keyboard.dismiss();
     setErr('');
+    const configError = getSupabaseConfigError();
+    if (configError) return setErr(configError);
     const normalized = email.trim().toLowerCase();
     if (!normalized) return setErr('Please enter your JKUAT email address.');
     if (!isJkuatEmail(normalized)) {
@@ -30,8 +32,16 @@ export default function Login() {
         email: normalized,
         options: { shouldCreateUser: true },
       });
-      if (error) { setErr(error.message); return; }
-      router.push({ pathname: '/(auth)/otp-sent', params: { email: normalized } });
+      if (error) {
+        const msg = error.message?.toLowerCase().includes('network request failed')
+          ? 'Cannot reach Supabase. Check EXPO_PUBLIC_SUPABASE_URL and rebuild the APK.'
+          : error.message;
+        setErr(msg);
+        return;
+      }
+      router.push({ pathname: '/(auth)/otp', params: { email: normalized } });
+    } catch (e: any) {
+      setErr(e?.message ?? 'Could not send OTP. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -40,6 +50,8 @@ export default function Login() {
   const onGoogle = async () => {
     Keyboard.dismiss();
     setErr('');
+    const configError = getSupabaseConfigError();
+    if (configError) return setErr(configError);
     setGoogleLoading(true);
     try {
       const result = await signInWithGoogle();

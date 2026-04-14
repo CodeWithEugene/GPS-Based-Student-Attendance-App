@@ -38,14 +38,34 @@ Built for Jomo Kenyatta University of Agriculture and Technology (JKUAT).
 1. Go to https://supabase.com → **New project** (free tier is fine).
 2. In the dashboard, open **SQL Editor → New query**, paste the contents of [`supabase/schema.sql`](supabase/schema.sql), and click **Run**. This creates tables, RLS policies, and seeds demo users + units.
 3. Open **Authentication → Providers → Email** and make sure it is enabled. Under **Email auth** uncheck **"Confirm email"** (so OTPs work on first login without clicking a link).
-4. Open **Authentication → URL Configuration → Redirect URLs** and add `attendease://` (so Expo deep links work).
+4. Open **Authentication → URL Configuration → Redirect URLs** and add `gpsattendance://auth-callback` (matches the app `scheme` and Google OAuth callback path).
 5. Open **Settings → API** — copy the **Project URL** and the **anon public key**.
+
+#### Email: 6-digit OTP (not only a magic link)
+
+Supabase uses the same `signInWithOtp` call for both flows. **What the user receives depends on the email template**, not the app code.
+
+1. In the dashboard go to **Authentication → Email Templates**.
+2. Open the **Magic Link** template (this is the one used for passwordless email sign-in).
+3. Include the OTP token in the body, for example: `Your login code is: {{ .Token }}`  
+   If the template only contains `{{ .ConfirmationURL }}`, users get a **clickable link** instead of a code.
+4. A full HTML example (JKUAT logo + OTP only, no magic link) lives in [`supabase/email-template-magic-link.html`](supabase/email-template-magic-link.html) — copy its **inner body/table content** into the dashboard editor if it expects HTML fragments only.
+5. Optional: under **Authentication → Providers → Email**, adjust **Email OTP expiration** if needed.
+
+#### Custom SMTP and “From” address (e.g. `eugene@technetium.co.ke`)
+
+The app **cannot** set the sender address. Configure it in Supabase:
+
+1. **Project Settings → Auth → SMTP Settings** — enable custom SMTP and enter host, port, username, and password from your mail provider.
+2. Set **Sender email** (and **Sender name**) to the address your provider allows you to send as (e.g. `eugene@technetium.co.ke`). It must match SPF/DKIM or the provider’s “verified sender” rules, or mail will fail or go to spam.
 
 ### 2. Paste keys into `.env`
 ```bash
 cp .env.example .env
 # edit .env and paste the two values from Settings → API
 ```
+If you build a standalone APK, these values are embedded at build-time.  
+After changing `.env`, rebuild and reinstall the APK.
 
 ### 3. Install & run
 ```bash

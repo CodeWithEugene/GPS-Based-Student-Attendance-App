@@ -1,18 +1,53 @@
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { createClient } from '@supabase/supabase-js';
 
-const url = process.env.EXPO_PUBLIC_SUPABASE_URL as string;
-const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY as string;
+type SupabaseExtra = { supabaseUrl?: string; supabaseAnonKey?: string };
 
-if (!url || !anonKey) {
+function fromExpoExtra(): { url: string; anonKey: string } {
+  const extra = Constants.expoConfig?.extra as SupabaseExtra | undefined;
+  return {
+    url: String(extra?.supabaseUrl ?? '').trim(),
+    anonKey: String(extra?.supabaseAnonKey ?? '').trim(),
+  };
+}
+
+const extra = fromExpoExtra();
+const envUrl = String(process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').trim();
+const envKey = String(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '').trim();
+// Prefer Metro-inlined EXPO_PUBLIC_* when set; otherwise use values baked into app.config → extra.
+const url = envUrl || extra.url;
+const anonKey = envKey || extra.anonKey;
+
+const missingConfig =
+  !url ||
+  !anonKey ||
+  url.includes('YOUR-PROJECT-REF') ||
+  anonKey.includes('YOUR-ANON-PUBLIC-KEY') ||
+  url === 'http://invalid.local';
+
+if (missingConfig) {
   console.warn(
-    '[AttendEase] Missing EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY. ' +
-      'Copy .env.example → .env and paste your Supabase keys.',
+    '[AttendEase] Supabase config missing or invalid. Set EXPO_PUBLIC_SUPABASE_URL and ' +
+      'EXPO_PUBLIC_SUPABASE_ANON_KEY in .env, then rebuild the APK.',
   );
 }
 
-export const supabase = createClient(url ?? 'http://invalid.local', anonKey ?? 'missing', {
+const INVALID_CONFIG_MESSAGE =
+  'App setup is incomplete: Supabase keys were not bundled in this build. ' +
+  'Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to .env and rebuild the APK.';
+
+export function getSupabaseConfigError(): string | null {
+  return missingConfig ? INVALID_CONFIG_MESSAGE : null;
+}
+
+// Never crash app startup on missing config. Use safe placeholders so screens can
+// render and show actionable setup errors instead of hard-crashing on launch.
+const clientUrl = url || 'http://invalid.local';
+const clientKey = anonKey || 'missing';
+
+export const supabase = createClient(clientUrl, clientKey, {
   auth: {
     storage: AsyncStorage as any,
     autoRefreshToken: true,
