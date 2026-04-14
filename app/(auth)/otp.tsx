@@ -8,6 +8,7 @@ import { colors, spacing } from '../../src/theme';
 import { supabase } from '../../src/lib/supabase';
 import { ensureProfileForSession } from '../../src/lib/auth-helpers';
 import { useAuth } from '../../src/store';
+import { formatAuthErrorForDisplay } from '../../src/lib/auth-errors';
 
 export default function OtpEntry() {
   const router = useRouter();
@@ -55,6 +56,10 @@ export default function OtpEntry() {
         const a = attempts + 1;
         setAttempts(a);
         if (a >= 3) return router.replace('/(auth)/locked');
+        if (error) {
+          setErr(formatAuthErrorForDisplay(error));
+          return;
+        }
         setErr(`Incorrect code. ${3 - a} attempt${3 - a === 1 ? '' : 's'} left.`);
         return;
       }
@@ -63,7 +68,7 @@ export default function OtpEntry() {
       await signIn(profile);
       router.replace(profile.role === 'lecturer' ? '/(lecturer)/dashboard' : '/(student)/dashboard');
     } catch (e: any) {
-      setErr(e?.message ?? 'Something went wrong. Try again.');
+      setErr(formatAuthErrorForDisplay(e));
     } finally {
       setLoading(false);
     }
@@ -77,7 +82,7 @@ export default function OtpEntry() {
       email: String(email),
       options: { shouldCreateUser: true },
     });
-    if (error) setErr(error.message);
+    if (error) setErr(formatAuthErrorForDisplay(error));
   };
 
   return (

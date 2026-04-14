@@ -8,6 +8,7 @@ import { colors, spacing } from '../../src/theme';
 import { getSupabaseConfigError, supabase } from '../../src/lib/supabase';
 import { isJkuatEmail } from '../../src/lib/auth-helpers';
 import { signInWithGoogle } from '../../src/lib/google-auth';
+import { formatAuthErrorForDisplay } from '../../src/lib/auth-errors';
 
 export default function Login() {
   const router = useRouter();
@@ -33,15 +34,12 @@ export default function Login() {
         options: { shouldCreateUser: true },
       });
       if (error) {
-        const msg = error.message?.toLowerCase().includes('network request failed')
-          ? 'Cannot reach Supabase. Check EXPO_PUBLIC_SUPABASE_URL and rebuild the APK.'
-          : error.message;
-        setErr(msg);
+        setErr(formatAuthErrorForDisplay(error));
         return;
       }
       router.push({ pathname: '/(auth)/otp', params: { email: normalized } });
     } catch (e: any) {
-      setErr(e?.message ?? 'Could not send OTP. Please try again.');
+      setErr(formatAuthErrorForDisplay(e));
     } finally {
       setLoading(false);
     }

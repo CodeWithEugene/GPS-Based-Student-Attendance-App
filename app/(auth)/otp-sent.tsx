@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Body, Button } from '../../src/components/UI';
 import { colors, spacing } from '../../src/theme';
 import { supabase } from '../../src/lib/supabase';
+import { formatAuthErrorForDisplay } from '../../src/lib/auth-errors';
 
 function mask(email: string) {
   const [u, d] = email.split('@');
@@ -70,7 +71,7 @@ export default function OtpSent() {
                 email: String(email),
                 options: { shouldCreateUser: true },
               });
-              if (error) setResendErr(error.message);
+              if (error) setResendErr(formatAuthErrorForDisplay(error));
             } finally {
               setResending(false);
             }
