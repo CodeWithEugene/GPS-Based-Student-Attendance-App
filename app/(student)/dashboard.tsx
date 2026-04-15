@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   dot: { position: 'absolute', top: -2, right: -2, width: 11, height: 11, borderRadius: 6, backgroundColor: colors.gold, borderWidth: 2, borderColor: colors.green },
-  heroStat: { marginTop: -spacing.xl, gap: spacing.lg, paddingTop: 0 },
+  heroStat: { marginTop: spacing.md, gap: spacing.lg, paddingTop: 0 },
   statCard: {
     backgroundColor: colors.white,
     borderRadius: radius.lg,
