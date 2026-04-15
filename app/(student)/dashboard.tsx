@@ -3,6 +3,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Avatar } from '../../src/components/Avatar';
 import { GreenHeader } from '../../src/components/GreenHeader';
 import { Body, Card, Pill } from '../../src/components/UI';
 import { colors, radius, shadows, spacing } from '../../src/theme';
@@ -67,9 +68,8 @@ export default function StudentDashboard() {
           <Pressable
             hitSlop={8}
             onPress={() => router.push('/(student)/profile')}
-            style={styles.avatar}
           >
-            <Text style={{ color: colors.white, fontWeight: '800' }}>{firstName[0]}</Text>
+            <Avatar uri={user.avatarUrl} name={firstName} size={44} ring tone="white" />
             <View style={styles.dot} />
           </Pressable>
         </View>
@@ -113,7 +113,7 @@ export default function StudentDashboard() {
               <Card style={{ padding: spacing.lg }}>
                 <View style={styles.classTop}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.className}>{item.name}</Text>
+                    <Text style={styles.className} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
                     <Body muted style={{ marginTop: 2 }}>{item.code} · {item.room}</Body>
                     <Body muted style={{ fontSize: 13 }}>{item.schedule.start}–{item.schedule.end} · {item.lecturerName}</Body>
                   </View>

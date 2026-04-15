@@ -3,6 +3,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Avatar } from '../../src/components/Avatar';
 import { GreenHeader } from '../../src/components/GreenHeader';
 import { Body, Button, Caption, Pill } from '../../src/components/UI';
 import { colors, radius, shadows, spacing } from '../../src/theme';
@@ -93,7 +94,7 @@ export default function Active() {
 
   const rows = users.map(stu => {
     const rec = records.find(r => r.studentId === stu.id);
-    return { id: stu.id, name: stu.name, record: rec };
+    return { id: stu.id, name: stu.name, avatarUrl: stu.avatarUrl, record: rec };
   }).sort((a, b) => {
     // signed-in first, then alphabetical
     const aSigned = a.record ? 1 : 0;
@@ -170,13 +171,9 @@ export default function Active() {
                 { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] },
               ]}
             >
-              <View style={[styles.avatar, { backgroundColor: signed ? colors.greenLight : colors.bgSubtle }]}>
-                <Text style={{ fontWeight: '800', color: signed ? colors.green : colors.textMuted }}>
-                  {item.name[0]?.toUpperCase() ?? '?'}
-                </Text>
-              </View>
+              <Avatar uri={item.avatarUrl} name={item.name} size={38} tone={signed ? 'green' : 'light'} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.rowName}>{item.name}</Text>
+                <Text style={styles.rowName} numberOfLines={1}>{item.name}</Text>
                 <Body muted style={{ fontSize: 12 }}>{item.id}</Body>
               </View>
               {signed ? (

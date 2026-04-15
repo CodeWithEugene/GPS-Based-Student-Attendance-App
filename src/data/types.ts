@@ -9,6 +9,8 @@ export type User = {
   department?: string;
   /** Degree programme (FK to courses.id). Required for students to see classes and sign in. */
   courseId?: string;
+  /** Public URL of the uploaded profile photo (Supabase Storage, avatars bucket). */
+  avatarUrl?: string;
 };
 
 export type Course = {

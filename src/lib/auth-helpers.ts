@@ -76,7 +76,7 @@ export async function ensureProfileForSession(email: string, authUserId: string)
   // 1. Existing profile by email?
   let { data: existing } = await supabase
     .from('profiles')
-    .select('id,email,name,role,programme,department,course_id')
+    .select('id,email,name,role,programme,department,course_id,avatar_url')
     .ilike('email', normEmail)
     .maybeSingle();
 
@@ -118,14 +118,14 @@ export async function ensureProfileForSession(email: string, authUserId: string)
         department: role === 'lecturer' ? 'Computing' : null,
         auth_user_id: authUserId,
       })
-      .select('id,email,name,role,programme,department,course_id')
+      .select('id,email,name,role,programme,department,course_id,avatar_url')
       .single();
     if (error) {
       const code = (error as { code?: string }).code;
       if (code === '23505') {
         const { data: raced } = await supabase
           .from('profiles')
-          .select('id,email,name,role,programme,department,course_id')
+          .select('id,email,name,role,programme,department,course_id,avatar_url')
           .ilike('email', normEmail)
           .maybeSingle();
         if (raced) {
@@ -158,7 +158,7 @@ export async function ensureProfileForSession(email: string, authUserId: string)
         programme: row.programme,
       })
       .eq('id', row.id)
-      .select('id,email,name,role,programme,department,course_id')
+      .select('id,email,name,role,programme,department,course_id,avatar_url')
       .single();
     if (upErr) throw new Error(upErr.message || 'Could not set lecturer role for this account.');
     if (upgraded) row = upgraded as typeof row;
@@ -172,5 +172,6 @@ export async function ensureProfileForSession(email: string, authUserId: string)
     programme: row.programme ?? undefined,
     department: row.department ?? undefined,
     courseId: row.course_id ?? undefined,
+    avatarUrl: (row as { avatar_url?: string | null }).avatar_url ?? undefined,
   };
 }

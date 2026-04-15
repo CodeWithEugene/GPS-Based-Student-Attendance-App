@@ -29,7 +29,7 @@ export default function HelpFail() {
             )
           }
         />
-        <Option color="#AAA" label="Go to Dashboard" onPress={() => router.replace('/(student)/dashboard')} />
+        <Option color={colors.textMuted} label="Go to Dashboard" onPress={() => router.replace('/(student)/dashboard')} />
       </View>
     </SafeAreaView>
   );

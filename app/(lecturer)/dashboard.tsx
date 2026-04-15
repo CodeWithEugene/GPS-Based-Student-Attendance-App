@@ -3,6 +3,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Avatar } from '../../src/components/Avatar';
 import { GreenHeader } from '../../src/components/GreenHeader';
 import { Body, Button, Caption, Pill } from '../../src/components/UI';
 import { colors, radius, shadows, spacing } from '../../src/theme';
@@ -58,8 +59,8 @@ export default function LecturerDashboard() {
             <Text style={styles.name}>{user.name}</Text>
             <Text style={styles.role}>Lecturer · {user.department ?? 'JKUAT'}</Text>
           </View>
-          <Pressable onPress={() => router.push('/(lecturer)/profile')} hitSlop={8} style={styles.avatar}>
-            <Text style={{ color: colors.white, fontWeight: '800' }}>{firstName[0]}</Text>
+          <Pressable onPress={() => router.push('/(lecturer)/profile')} hitSlop={8}>
+            <Avatar uri={user.avatarUrl} name={firstName} size={44} ring tone="white" />
           </Pressable>
         </View>
       </GreenHeader>
@@ -137,7 +138,7 @@ export default function LecturerDashboard() {
                     <Ionicons name="book" size={22} color={live ? colors.gold : colors.green} />
                   </View>
                   <View style={{ flex: 1, marginLeft: spacing.md }}>
-                    <Text style={styles.className}>{item.name}</Text>
+                    <Text style={styles.className} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
                     <Body muted style={{ fontSize: 13 }}>{item.code} · {deg}</Body>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
                       <Pill label={item.room} tone="neutral" size="sm" />
@@ -200,7 +201,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     marginHorizontal: spacing.lg,
-    marginTop: -spacing.xl,
+    marginTop: spacing.md,
     marginBottom: spacing.md,
   },
   statCard: {

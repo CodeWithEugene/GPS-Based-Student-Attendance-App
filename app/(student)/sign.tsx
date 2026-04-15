@@ -5,8 +5,8 @@ import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
-import MapView, { Circle, Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GeofenceMap } from '../../src/components/GeofenceMap';
 import { GreenHeader } from '../../src/components/GreenHeader';
 import { Body, Button, Card } from '../../src/components/UI';
 import { colors, radius, shadows, spacing } from '../../src/theme';
@@ -241,28 +241,14 @@ export default function SignAttendance() {
     <View style={{ flex: 1, backgroundColor: colors.bgCanvas }}>
       <GreenHeader title="Sign attendance" centered compact />
 
-      <View style={[styles.mapWrap, shadows.md]}>
-        <MapView
-          provider={PROVIDER_DEFAULT}
-          style={{ flex: 1 }}
-          initialRegion={{
-            latitude: session.geofence.latitude,
-            longitude: session.geofence.longitude,
-            latitudeDelta: 0.003,
-            longitudeDelta: 0.003,
-          }}
-          showsUserLocation
-        >
-          <Circle
-            center={{ latitude: session.geofence.latitude, longitude: session.geofence.longitude }}
-            radius={session.geofence.radius}
-            strokeColor={colors.green}
-            strokeWidth={2}
-            fillColor="rgba(27,94,32,0.14)"
-          />
-          <Marker coordinate={{ latitude: session.geofence.latitude, longitude: session.geofence.longitude }} pinColor={colors.green} />
-        </MapView>
-        {/* Floating distance chip */}
+      <View style={styles.mapWrap}>
+        <GeofenceMap
+          center={{ latitude: session.geofence.latitude, longitude: session.geofence.longitude }}
+          radiusMeters={session.geofence.radius}
+          label={session.room}
+          showUserLocation
+          style={{ height: 260 }}
+        />
         {coords && (
           <View style={styles.mapChip}>
             <Ionicons name="navigate" size={13} color={inside ? colors.green : colors.red} />
@@ -350,10 +336,7 @@ function PermDenied({ onBack }: { onBack: () => void }) {
 const styles = StyleSheet.create({
   mapWrap: {
     margin: spacing.lg,
-    height: 260,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    backgroundColor: colors.bgSubtle,
+    position: 'relative',
   },
   mapChip: {
     position: 'absolute',

@@ -29,7 +29,7 @@ export function TopBar({
   return (
     <View style={[styles.bar, { backgroundColor: bg, borderBottomColor: tone === 'white' ? colors.border : 'transparent', paddingTop: padTop }]}>
       {back ? (
-        <Pressable onPress={goBack} hitSlop={12} style={styles.side}>
+        <Pressable onPress={goBack} hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }} style={styles.side}>
           <Ionicons name="chevron-back" size={26} color={fg} />
         </Pressable>
       ) : (

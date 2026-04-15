@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Avatar } from '../../../src/components/Avatar';
 import { Body, Button, Card } from '../../../src/components/UI';
 import { TopBar } from '../../../src/components/TopBar';
 import { colors, spacing } from '../../../src/theme';
@@ -117,7 +118,7 @@ export default function StudentDetail() {
       <TopBar title={user.name} tone="green" back />
       <View style={{ padding: spacing.lg, gap: 12 }}>
         <View style={{ alignItems: 'center', marginBottom: 8 }}>
-          <View style={styles.avatar}><Text style={{ fontSize: 26, fontWeight: '800', color: colors.green }}>{user.name[0]}</Text></View>
+          <Avatar uri={user.avatarUrl} name={user.name} size={80} ring />
           <Text style={{ fontSize: 18, fontWeight: '700', marginTop: 8 }}>{user.name}</Text>
           <Body muted>{user.id} • {user.programme ?? user.department ?? '—'}</Body>
         </View>

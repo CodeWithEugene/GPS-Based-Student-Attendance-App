@@ -88,7 +88,7 @@ export default function History() {
 }
 
 const styles = StyleSheet.create({
-  tab: { paddingVertical: 6, paddingHorizontal: 4 },
+  tab: { paddingVertical: 12, paddingHorizontal: 8, minHeight: 44, justifyContent: 'center' },
   tabActive: { borderBottomWidth: 3, borderBottomColor: colors.gold },
   row: { flexDirection: 'row', alignItems: 'center', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
 });

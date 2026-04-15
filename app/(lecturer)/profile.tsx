@@ -4,19 +4,23 @@ import * as Linking from 'expo-linking';
 import * as LocalAuth from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GreenHeader } from '../../src/components/GreenHeader';
+import { Avatar } from '../../src/components/Avatar';
 import { Body } from '../../src/components/UI';
-import { colors, spacing } from '../../src/theme';
+import { pickAndUploadAvatar } from '../../src/lib/avatar';
+import { repo } from '../../src/data/repo';
+import { colors, shadows, spacing } from '../../src/theme';
 import { useAuth } from '../../src/store';
 
 export default function LecturerProfile() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user, signOut } = useAuth();
+  const { user, signIn, signOut } = useAuth();
   const [bio, setBio] = useState(false);
   const [radius, setRadius] = useState(30);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem('ae.biometricEnabled').then(v => setBio(v === '1'));
@@ -53,17 +57,43 @@ export default function LecturerProfile() {
     await AsyncStorage.setItem('ae.defaultRadius', String(n));
   };
 
+  const onChangePhoto = async () => {
+    if (!user || uploading) return;
+    setUploading(true);
+    try {
+      const res = await pickAndUploadAvatar(user.id);
+      if (res.ok) {
+        const fresh = await repo.fetchProfileById(user.id);
+        if (fresh) await signIn(fresh);
+      } else if (res.reason === 'error') {
+        Alert.alert('Could not update photo', res.message);
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (!user) return null;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bgCanvas }}>
       <GreenHeader title="Profile" centered />
       <View style={{ alignItems: 'center', padding: spacing.lg }}>
-        <View style={styles.avatar}>
-          <Text style={{ fontSize: 30, fontWeight: '800', color: colors.green }}>{user.name[0]}</Text>
-        </View>
-        <Text style={{ fontSize: 18, fontWeight: '700', marginTop: 10 }}>{user.name}</Text>
-        <Body muted>{user.id} • {user.department}</Body>
+        <Pressable onPress={onChangePhoto} style={styles.avatarWrap} disabled={uploading}>
+          <Avatar uri={user.avatarUrl} name={user.name} size={96} ring />
+          <View style={[styles.cameraBadge, shadows.sm]}>
+            {uploading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="camera" size={16} color="#fff" />
+            )}
+          </View>
+        </Pressable>
+        <Text style={{ fontSize: 18, fontWeight: '700', marginTop: 12 }}>{user.name}</Text>
+        <Body muted>{user.id} · {user.department || '—'}</Body>
+        <Pressable onPress={onChangePhoto} disabled={uploading}>
+          <Text style={styles.changePhoto}>{uploading ? 'Uploading…' : 'Change photo'}</Text>
+        </Pressable>
       </View>
       <View style={{ paddingHorizontal: spacing.lg }}>
         <Row icon="key-outline" label="Change Password" onPress={() => router.push('/(auth)/new-password')} />
@@ -100,7 +130,14 @@ function Row({ icon, label, right, onPress }: any) {
 function Divider() { return <View style={{ height: 1, backgroundColor: colors.border }} />; }
 
 const styles = StyleSheet.create({
-  avatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: colors.greenLight, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: colors.green },
+  avatarWrap: { position: 'relative' },
+  cameraBadge: {
+    position: 'absolute', bottom: 0, right: 0,
+    width: 32, height: 32, borderRadius: 16, backgroundColor: colors.green,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 3, borderColor: colors.bgCanvas,
+  },
+  changePhoto: { color: colors.green, fontWeight: '700', fontSize: 13, marginTop: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
   logout: { backgroundColor: colors.red, padding: 14, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: spacing.lg, marginTop: spacing.sm },
 });

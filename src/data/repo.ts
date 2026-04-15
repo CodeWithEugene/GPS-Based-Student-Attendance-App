@@ -14,6 +14,7 @@ type DbProfile = {
   programme: string | null;
   department: string | null;
   course_id: string | null;
+  avatar_url: string | null;
 };
 type DbUnit = {
   id: string; code: string; name: string; room: string;
@@ -43,6 +44,7 @@ const toUser = (p: DbProfile): User => ({
   id: p.id, email: p.email, name: p.name, role: p.role,
   programme: p.programme ?? undefined, department: p.department ?? undefined,
   courseId: p.course_id ?? undefined,
+  avatarUrl: p.avatar_url ?? undefined,
 });
 const toCourse = (c: DbCourse): Course => ({
   id: c.id, name: c.name, sortOrder: c.sort_order,
@@ -97,7 +99,7 @@ export const repo = {
   async getUserById(id: string): Promise<User | undefined> {
     const { data } = await supabase
       .from('profiles')
-      .select('id,email,name,role,programme,department,course_id')
+      .select('id,email,name,role,programme,department,course_id,avatar_url')
       .eq('id', id)
       .maybeSingle();
     return data ? toUser(data as DbProfile) : undefined;
@@ -109,7 +111,7 @@ export const repo = {
   async getProfileByAuthUserId(authUserId: string): Promise<User | null> {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id,email,name,role,programme,department,course_id')
+      .select('id,email,name,role,programme,department,course_id,avatar_url')
       .eq('auth_user_id', authUserId)
       .maybeSingle();
     if (error) return null;
@@ -118,7 +120,7 @@ export const repo = {
   async getUsers(): Promise<User[]> {
     const { data } = await supabase
       .from('profiles')
-      .select('id,email,name,role,programme,department,course_id');
+      .select('id,email,name,role,programme,department,course_id,avatar_url');
     return (data as DbProfile[] | null)?.map(toUser) ?? [];
   },
 
@@ -159,10 +161,20 @@ export const repo = {
     }
   },
 
+  async updateUserAvatar(userId: string, avatarUrl: string | null): Promise<void> {
+    const uid = await getSessionUserIdForWrite();
+    const { error } = await supabase
+      .from('profiles')
+      .update({ avatar_url: avatarUrl })
+      .eq('id', userId)
+      .or(`auth_user_id.is.null,auth_user_id.eq.${uid}`);
+    if (error) throw error;
+  },
+
   async getStudentsForCourse(courseId: string): Promise<User[]> {
     const { data } = await supabase
       .from('profiles')
-      .select('id,email,name,role,programme,department,course_id')
+      .select('id,email,name,role,programme,department,course_id,avatar_url')
       .eq('role', 'student')
       .eq('course_id', courseId);
     return (data as DbProfile[] | null)?.map(toUser) ?? [];

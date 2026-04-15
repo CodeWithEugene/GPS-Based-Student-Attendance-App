@@ -3,11 +3,11 @@ import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import MapView, { Circle, Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 // @ts-ignore
 import Slider from '@react-native-community/slider';
 import { Body, Button, Input } from '../../src/components/UI';
+import { GeofenceMap } from '../../src/components/GeofenceMap';
 import { TopBar } from '../../src/components/TopBar';
 import { JKUAT_BUILDINGS } from '../../src/data/jkuat-buildings';
 import { repo } from '../../src/data/repo';
@@ -196,22 +196,15 @@ export default function Setup() {
           </View>
         )}
 
-        {center && (
-          <View style={{ height: 200, borderRadius: 12, overflow: 'hidden', marginTop: 6 }}>
-            <MapView
-              style={{ flex: 1 }}
-              region={{
-                latitude: center.latitude,
-                longitude: center.longitude,
-                latitudeDelta: 0.003,
-                longitudeDelta: 0.003,
-              }}
-            >
-              <Circle center={center} radius={radius} strokeColor={colors.green} fillColor="rgba(27,94,32,0.15)" />
-              <Marker coordinate={center} pinColor={colors.green} />
-            </MapView>
-          </View>
-        )}
+        <GeofenceMap
+          center={center}
+          radiusMeters={radius}
+          label={pinMode === 'building'
+            ? JKUAT_BUILDINGS.find(x => x.id === selectedBuildingId)?.name
+            : unit?.room}
+          showUserLocation={pinMode === 'gps'}
+          style={{ marginTop: 6, height: 220 }}
+        />
 
         <Text style={{ fontWeight: '600' }}>Geofence radius: {radius} m</Text>
         <Slider

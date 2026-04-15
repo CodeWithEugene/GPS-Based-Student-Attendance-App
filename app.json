@@ -74,6 +74,12 @@
           "color": "#1B5E20"
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow the app to access your photos so you can set a profile picture."
+        }
+      ],
       "expo-web-browser"
     ],
     "extra": {

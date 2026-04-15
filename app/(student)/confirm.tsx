@@ -63,7 +63,7 @@ export default function Confirm() {
 
         {!success && reason && (
           <Card tone="danger" elevated={false} style={{ padding: spacing.md }}>
-            <Body style={{ color: colors.red, textAlign: 'center', fontWeight: '600' }}>{reason}</Body>
+            <Body style={{ textAlign: 'center', fontWeight: '600' }}>{reason}</Body>
           </Card>
         )}
 

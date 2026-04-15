@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Input } from '../../src/components/UI';
 import { TopBar } from '../../src/components/TopBar';
-import { colors, spacing } from '../../src/theme';
+import { colors, radius, spacing } from '../../src/theme';
 
 const FAQ = [
   { q: 'Why can\'t I sign attendance?', a: 'You must be inside the classroom geofence and the lecturer must have opened the session. Make sure GPS is on.' },
@@ -52,5 +52,5 @@ export default function Help() {
 }
 
 const styles = StyleSheet.create({
-  item: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 14, marginBottom: 10 },
+  item: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 14, marginBottom: 10 },
 });
