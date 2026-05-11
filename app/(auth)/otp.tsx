@@ -75,7 +75,14 @@ export default function OtpEntry() {
       }
 
       const sessionEmail = (data.user.email ?? email).trim().toLowerCase();
-      const profile = await ensureProfileForSession(sessionEmail, data.user.id);
+      let profile;
+      try {
+        profile = await ensureProfileForSession(sessionEmail, data.user.id);
+      } catch (e: any) {
+        await supabase.auth.signOut();
+        setErr(formatAuthErrorForDisplay(e));
+        return;
+      }
       await signIn(profile);
       await markPermissionOnboardingComplete();
       router.replace(profile.role === 'lecturer' ? '/(lecturer)/dashboard' : '/(student)/dashboard');

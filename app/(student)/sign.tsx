@@ -152,6 +152,7 @@ export default function SignAttendance() {
   }
 
   const sessionOver = Date.now() > new Date(session.endsAt).getTime() || session.status !== 'live';
+  const signInClosed = !sessionOver && session.signInOpen === false;
   const accuracyBad = coords?.accuracy != null && coords.accuracy > Math.max(session.geofence.radius, 25);
   const inside = coords ? isInsideGeofence(coords, session.geofence, session.geofence.radius) : false;
   const distance = coords
@@ -172,6 +173,13 @@ export default function SignAttendance() {
         router.replace({
           pathname: '/(student)/confirm',
           params: { ok: '0', unit: session.unitName, reason: 'This session has already ended.' },
+        });
+        return;
+      }
+      if (fresh.signInOpen === false) {
+        router.replace({
+          pathname: '/(student)/confirm',
+          params: { ok: '0', unit: session.unitName, reason: 'The lecturer has closed the sign-in window.' },
         });
         return;
       }
@@ -292,14 +300,32 @@ export default function SignAttendance() {
             <Text style={{ color: colors.red, fontWeight: '700' }}>This session has ended.</Text>
           </View>
         )}
+        {signInClosed && !alreadySigned && (
+          <View style={[styles.status, { backgroundColor: colors.redLight }]}>
+            <Ionicons name="lock-closed" size={20} color={colors.red} />
+            <Text style={{ color: colors.red, fontWeight: '700' }}>
+              Sign-in is paused by the lecturer.
+            </Text>
+          </View>
+        )}
 
         <Button
-          title={alreadySigned ? '✓ Already signed' : sessionOver ? 'Session closed' : accuracyBad ? 'Waiting for better GPS…' : 'Sign attendance'}
-          disabled={!inside || alreadySigned || sessionOver || accuracyBad}
+          title={
+            alreadySigned
+              ? '✓ Already signed'
+              : sessionOver
+                ? 'Session closed'
+                : signInClosed
+                  ? 'Sign-in paused'
+                  : accuracyBad
+                    ? 'Waiting for better GPS…'
+                    : 'Sign attendance'
+          }
+          disabled={!inside || alreadySigned || sessionOver || accuracyBad || signInClosed}
           loading={signing}
           variant="secondary"
           onPress={sign}
-          icon={!alreadySigned && !sessionOver ? <Ionicons name="checkmark-circle" size={20} color="#fff" /> : undefined}
+          icon={!alreadySigned && !sessionOver && !signInClosed ? <Ionicons name="checkmark-circle" size={20} color="#fff" /> : undefined}
         />
         {!inside && coords && !sessionOver && (
           <Pressable onPress={() => router.push('/(student)/help-fail')}>

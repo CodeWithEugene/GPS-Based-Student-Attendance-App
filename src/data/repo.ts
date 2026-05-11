@@ -31,6 +31,7 @@ type DbSession = {
   started_at: string; ends_at: string; ended_at: string | null;
   geofence: { latitude: number; longitude: number; radius: number };
   require_selfie: boolean; status: 'upcoming' | 'live' | 'ended';
+  sign_in_open: boolean;
 };
 type DbAttendance = {
   id: string; session_id: string; unit_id: string; unit_code: string;
@@ -72,12 +73,14 @@ const toSession = (s: DbSession): Session => ({
   lecturerId: s.lecturer_id, startedAt: s.started_at, endsAt: s.ends_at,
   endedAt: s.ended_at ?? undefined, geofence: s.geofence,
   requireSelfie: s.require_selfie, status: s.status,
+  signInOpen: s.sign_in_open ?? true,
 });
 const fromSession = (s: Session): DbSession => ({
   id: s.id, unit_id: s.unitId, unit_code: s.unitCode, unit_name: s.unitName, room: s.room,
   lecturer_id: s.lecturerId, started_at: s.startedAt, ends_at: s.endsAt,
   ended_at: s.endedAt ?? null, geofence: s.geofence,
   require_selfie: s.requireSelfie, status: s.status,
+  sign_in_open: s.signInOpen,
 });
 const toAttendance = (a: DbAttendance): AttendanceRecord => ({
   id: a.id, sessionId: a.session_id, unitId: a.unit_id, unitCode: a.unit_code,
@@ -235,6 +238,7 @@ export const repo = {
     if (patch.endsAt !== undefined) body.ends_at = patch.endsAt;
     if (patch.requireSelfie !== undefined) body.require_selfie = patch.requireSelfie;
     if (patch.geofence !== undefined) body.geofence = patch.geofence;
+    if (patch.signInOpen !== undefined) body.sign_in_open = patch.signInOpen;
     const { error } = await supabase.from('sessions').update(body).eq('id', id);
     if (error) throw error;
   },

@@ -25,7 +25,7 @@ export default function Setup() {
   const [center, setCenter] = useState<{ latitude: number; longitude: number } | null>(null);
   const [pinMode, setPinMode] = useState<PinMode>('gps');
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>(JKUAT_BUILDINGS[0]?.id ?? '');
-  const [radius, setRadius] = useState(30);
+  const [radius, setRadius] = useState(25);
   const [duration, setDuration] = useState(30);
   const [selfie, setSelfie] = useState(false);
   const [notify, setNotify] = useState(true);
@@ -74,7 +74,7 @@ export default function Setup() {
       setUnit(u);
       const saved = await AsyncStorage.getItem('ae.defaultRadius');
       if (saved) setRadius(Number(saved));
-      else if (u) setRadius(u.geofence.radius);
+      else if (u) setRadius(u.geofence.radius || 25);
 
       await applyGpsCenter();
     })();
@@ -126,6 +126,7 @@ export default function Setup() {
       geofence: { ...center, radius },
       requireSelfie: selfie,
       status: 'live',
+      signInOpen: true,
     };
     try {
       await repo.createSession(s);
@@ -203,8 +204,13 @@ export default function Setup() {
             ? JKUAT_BUILDINGS.find(x => x.id === selectedBuildingId)?.name
             : unit?.room}
           showUserLocation={pinMode === 'gps'}
-          style={{ marginTop: 6, height: 220 }}
+          interactive
+          onCenterChange={setCenter}
+          style={{ marginTop: 6, height: 260 }}
         />
+        <Body muted style={{ fontSize: 12 }}>
+          Tap anywhere on the map or drag the pin to fine-tune the geofence centre.
+        </Body>
 
         <Text style={{ fontWeight: '600' }}>Geofence radius: {radius} m</Text>
         <Slider

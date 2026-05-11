@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Animated, FlatList, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '../../src/components/Avatar';
 import { GreenHeader } from '../../src/components/GreenHeader';
@@ -20,6 +20,7 @@ export default function Active() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [left, setLeft] = useState(0);
+  const [togglingWindow, setTogglingWindow] = useState(false);
   const pulseAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -64,6 +65,24 @@ export default function Active() {
   }, [user]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const toggleSignInWindow = async () => {
+    if (!session || togglingWindow) return;
+    const next = !session.signInOpen;
+    setSession({ ...session, signInOpen: next });
+    setTogglingWindow(true);
+    try {
+      await repo.updateSession(session.id, { signInOpen: next });
+    } catch (e: any) {
+      setSession({ ...session, signInOpen: !next });
+      Alert.alert(
+        'Could not update sign-in window',
+        e?.message ?? 'Please check your connection and try again.',
+      );
+    } finally {
+      setTogglingWindow(false);
+    }
+  };
 
   useEffect(() => {
     const t = setInterval(() => { load(); }, 3000);
@@ -151,6 +170,33 @@ export default function Active() {
         </View>
       </View>
 
+      <View style={[styles.windowCard, shadows.sm, !session.signInOpen && styles.windowCardClosed]}>
+        <View style={[styles.windowIcon, { backgroundColor: session.signInOpen ? colors.greenLight : colors.redLight }]}>
+          <Ionicons
+            name={session.signInOpen ? 'lock-open' : 'lock-closed'}
+            size={20}
+            color={session.signInOpen ? colors.green : colors.red}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.windowTitle}>
+            Sign-in window {session.signInOpen ? 'open' : 'closed'}
+          </Text>
+          <Body muted style={{ fontSize: 12, marginTop: 2 }}>
+            {session.signInOpen
+              ? 'Students inside the geofence can sign in now.'
+              : 'New sign-ins are blocked. Toggle on to reopen.'}
+          </Body>
+        </View>
+        <Switch
+          value={session.signInOpen}
+          onValueChange={toggleSignInWindow}
+          disabled={togglingWindow}
+          trackColor={{ true: colors.green, false: '#D0D5DD' }}
+          thumbColor="#fff"
+        />
+      </View>
+
       <FlatList
         data={rows}
         keyExtractor={r => r.id}
@@ -221,6 +267,25 @@ const styles = StyleSheet.create({
   miniRingText: { fontWeight: '800', fontSize: 14 },
   progress: { height: 6, backgroundColor: colors.bgSubtle, borderRadius: radius.pill, marginTop: spacing.md, overflow: 'hidden' },
   progressFill: { height: 6, borderRadius: radius.pill, backgroundColor: colors.green },
+  windowCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.greenLight,
+  },
+  windowCardClosed: { borderColor: colors.redLight, backgroundColor: '#FFF7F7' },
+  windowIcon: {
+    width: 38, height: 38, borderRadius: 19,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  windowTitle: { fontWeight: '800', fontSize: 14, color: colors.text },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
     padding: spacing.md,

@@ -168,6 +168,103 @@ EAS emails you a signed APK in ~10 min.
 - **expo-notifications** — push
 - **Supabase** — Postgres, Row-Level-Security, email-OTP auth, realtime-ready
 
+## System architecture
+
+AttendEase is a **single Expo client** talking to **Supabase** for authentication and data. Geofence checks use **on-device GPS** and **Haversine distance** against the session geofence stored in the database; Postgres enforces uniqueness and **RLS** enforces who can read or write which rows.
+
+### Context (who talks to what)
+
+```mermaid
+flowchart LR
+  subgraph actors["People"]
+    STU["Students"]
+    LEC["Lecturers"]
+  end
+
+  subgraph device["Expo app on phone"]
+    APP["AttendEase\nReact Native + expo-router"]
+  end
+
+  subgraph supa["Supabase project"]
+    AUTH["Auth\nemail OTP, Google"]
+    PG[("Postgres\nRLS policies")]
+    SMTP["Email delivery\nbuilt-in or custom SMTP"]
+  end
+
+  STU --> APP
+  LEC --> APP
+  APP -->|"REST + auth session"| AUTH
+  APP -->|"SQL via PostgREST\nanon key + JWT"| PG
+  AUTH -->|"OTP / magic link mail"| SMTP
+```
+
+### In-app layers
+
+```mermaid
+flowchart TB
+  subgraph routes["app/ routes"]
+    R_AUTH["(auth)"]
+    R_STU["(student)"]
+    R_LEC["(lecturer)"]
+  end
+
+  subgraph state["State & helpers"]
+    CTX["AuthProvider\nsrc/store.tsx"]
+    REPO["repo + types\nsrc/data/"]
+    GEO["geo.ts\nHaversine"]
+  end
+
+  subgraph native["Device APIs"]
+    LOC["expo-location"]
+    MAPS["react-native-maps"]
+    BIO["expo-local-authentication"]
+    STORE["AsyncStorage"]
+  end
+
+  SB["Supabase JS client\nsrc/lib/supabase.ts"]
+
+  R_AUTH --> CTX
+  R_STU --> CTX
+  R_LEC --> CTX
+  R_STU --> GEO
+  R_STU --> LOC
+  R_STU --> MAPS
+  R_AUTH --> BIO
+  CTX --> REPO
+  REPO --> SB
+  CTX --> SB
+  REPO --> STORE
+```
+
+### Core data entities (server)
+
+```mermaid
+erDiagram
+  profiles ||--o{ units : "lecturer teaches"
+  profiles ||--o{ sessions : "lecturer opens"
+  profiles ||--o{ attendance : "student signs"
+  units ||--o{ sessions : "scheduled as"
+  units ||--o{ attendance : "for unit"
+  sessions ||--o{ attendance : "per session"
+
+  profiles {
+    string id
+    string auth_user_id
+    string role
+  }
+  sessions {
+    string id
+    string status
+    string geofence_json
+  }
+  attendance {
+    string id
+    string coords_json
+  }
+```
+
+On GitHub and many Markdown viewers, the diagrams above render automatically. If your viewer does not support Mermaid, use the [Mermaid Live Editor](https://mermaid.live) and paste the fenced blocks to export PNG or SVG.
+
 ## Colour palette (strict JKUAT brand)
 
 | Token | Hex |

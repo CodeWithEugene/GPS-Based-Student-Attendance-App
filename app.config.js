@@ -13,29 +13,13 @@ loadProjectEnv(path.resolve(__dirname), { silent: true, force: true });
 
 const appJson = require('./app.json');
 
-const googleMapsKey =
-  process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
-  process.env.GOOGLE_MAPS_API_KEY ||
-  '';
-
 module.exports = {
   expo: {
     ...appJson.expo,
-    android: {
-      ...(appJson.expo.android || {}),
-      // Google Maps Android SDK needs this entry on every build that embeds MapView.
-      // When empty, maps render as a blank tile; the app still works for sign-in but
-      // the preview panel on the lecturer setup screen will show an info card instead.
-      config: {
-        ...((appJson.expo.android || {}).config || {}),
-        googleMaps: googleMapsKey ? { apiKey: googleMapsKey } : undefined,
-      },
-    },
     extra: {
       ...(appJson.expo.extra || {}),
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL || '',
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
-      googleMapsApiKey: googleMapsKey,
     },
   },
 };

@@ -9,9 +9,11 @@ import { getSupabaseConfigError, supabase } from '../../src/lib/supabase';
 import { isAllowedSignInEmail } from '../../src/lib/auth-helpers';
 import { signInWithGoogle } from '../../src/lib/google-auth';
 import { formatAuthErrorForDisplay } from '../../src/lib/auth-errors';
+import { useAuth } from '../../src/store';
 
 export default function Login() {
   const router = useRouter();
+  const { signIn } = useAuth();
   const { oauthError } = useLocalSearchParams<{ oauthError?: string }>();
   const [email, setEmail] = useState('');
   const [err, setErr] = useState('');
@@ -67,6 +69,7 @@ export default function Login() {
         setErr(formatAuthErrorForDisplay({ message: result.message }));
         return;
       }
+      await signIn(result.user);
       router.replace(result.user.role === 'lecturer' ? '/(lecturer)/dashboard' : '/(student)/dashboard');
     } finally {
       setGoogleLoading(false);

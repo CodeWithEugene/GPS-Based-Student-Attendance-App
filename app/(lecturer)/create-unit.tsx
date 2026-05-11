@@ -67,7 +67,7 @@ export default function CreateUnit() {
         lecturerName: user.name,
         schedule: { start, end, day },
         enrolledStudentIds: [],
-        geofence: { latitude: -1.0954, longitude: 37.0146, radius: 30 },
+        geofence: { latitude: -1.0954, longitude: 37.0146, radius: 25 },
         courseId,
       };
       await repo.createUnit(unit);

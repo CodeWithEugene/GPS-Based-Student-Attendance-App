@@ -46,6 +46,8 @@ export type Session = {
   geofence: { latitude: number; longitude: number; radius: number };
   requireSelfie: boolean;
   status: 'upcoming' | 'live' | 'ended';
+  /** When false, lecturer has paused student sign-in even though the session is still live. */
+  signInOpen: boolean;
 };
 
 export type AttendanceRecord = {
