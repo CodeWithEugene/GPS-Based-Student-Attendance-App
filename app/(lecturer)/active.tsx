@@ -236,7 +236,7 @@ export default function Active() {
         }}
       />
 
-      <View style={[styles.footer, { paddingBottom: spacing.lg + insets.bottom }]}>
+      <View style={[styles.footer, { paddingBottom: spacing.sm }]}>
         <Button title="End Session" variant="danger" onPress={() => router.push('/(lecturer)/end')} />
       </View>
     </View>
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   liveRoom: { color: 'rgba(255,255,255,0.78)', fontSize: 13, fontWeight: '600', marginTop: 4 },
   statCard: {
     marginHorizontal: spacing.lg,
-    marginTop: -spacing.xl,
+    marginTop: spacing.md,
     backgroundColor: colors.white,
     borderRadius: radius.lg,
     padding: spacing.lg,
